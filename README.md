@@ -5,6 +5,9 @@
 一个真实可安装的 Chrome / Edge Manifest V3 扩展，以及一套中文产品介绍站。打开商品详情页，点击图仓，它会在本地扫描页面图片，自动去重、优先还原高清原图，然后打包 ZIP 或逐张下载。
 
 - **在线站点**：https://picharvest-2026.surge.sh
+- **GitHub 仓库**：https://github.com/dsuker-111/picharvest
+- **v1.0.0 Release**：https://github.com/dsuker-111/picharvest/releases/tag/v1.0.0
+- **GitHub 安装包直链**：https://github.com/dsuker-111/picharvest/releases/latest/download/picharvest-extension-v1.0.0.zip
 - **版本**：v1.0.0（Chrome / Edge 116+）
 - **安装包**：`site/downloads/picharvest-extension-v1.0.0.zip`
 - **源码包**：`site/downloads/picharvest-source-v1.0.0.zip`
@@ -105,29 +108,25 @@ scripts/
 - `npm run preview`：1440 / 1180 / 1024 / 900 / 768 / 430 / 390 / 320 宽度无横向溢出，站点无 console / page error。
 - **在线站点验证**：HTTP 200，全部图片加载，0 张 broken；安装包链接返回 200，哈希一致。
 
-## 发布与限制
+## 发布
 
-当前在线地址 **https://picharvest-2026.surge.sh** 已发布到 Surge，HTTP 200，安装包 / 隐私页 / sitemap 均可访问。Surge 已向账号邮箱发送验证邮件，点击邮件中的确认链接可长期保留该域名。HTTPS 证书由 Surge 自动签发。
+- **官网**：https://picharvest-2026.surge.sh
+  - HTTP 200，安装包 / 隐私页 / sitemap 均可访问
+  - Surge 已向账号邮箱发送验证邮件，点击确认可长期保留域名
+- **GitHub 仓库**：https://github.com/dsuker-111/picharvest
+  - 仓库包含 README、源码 ZIP、扩展 ZIP、校验值
+- **GitHub Release**：https://github.com/dsuker-111/picharvest/releases/tag/v1.0.0
+  - 资产 `picharvest-extension-v1.0.0.zip`，与官网安装包 SHA-256 一致
+  - 最新版直链：https://github.com/dsuker-111/picharvest/releases/latest/download/picharvest-extension-v1.0.0.zip
 
-备用地址（Cloudflare Quick Tunnel，仅本次会话有效）：`https://aka-annual-plot-nvidia.trycloudflare.com`。
+**秒哒**：PRD 已生成（项目 `app-fdcvgrpzh2wx`），但生成应用需要 40 秒点、账号仅剩 20，官方返回「秒点不足」。充值秒点后可继续：
 
-发布过程中遇到的两个平台限制：
-
-1. **秒哒**：PRD 已生成，但生成应用需要 40 秒点，账号仅剩 20，官方返回「秒点不足」。充值后可继续生成并发布到 `*.miaoda.online`。
-2. **GitHub**：`github.com` 在当前网络下多次连接超时，`api.github.com` 可用但缺少 token；因此没有创建 GitHub Release，安装包直接随站点分发。
-
-原计划的双通道发布情况：
-
-- **秒哒**：已用官方 `miaoda-cli`（OAuth 设备授权）创建项目 `app-fdcvgrpzh2wx`，并生成完整 PRD；生成应用时返回「秒点不足」（账号剩余 20 秒点，生成需要 40），因此尚未在秒哒发布。充值秒点后安装并登录 CLI，再执行：
-
-  ```bash
-  npm install -g miaoda-cli
-  miaoda login
-  miaoda generate-app --app-id app-fdcvgrpzh2wx --context-id conv-fdcvgrpzh2ww --watch
-  miaoda publish --app-id app-fdcvgrpzh2wx --wait
-  ```
-
-- **GitHub**：当前网络到 `github.com` 多次连接超时；GitHub REST API 可访问，但缺少可用 token。未能创建 release 仓库；安装包已经随站点直接分发。
+```bash
+npm install -g miaoda-cli
+miaoda login
+miaoda generate-app --app-id app-fdcvgrpzh2wx --context-id conv-fdcvgrpzh2ww --watch
+miaoda publish --app-id app-fdcvgrpzh2wx --wait
+```
 
 ## 已知限制
 
