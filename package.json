@@ -1,0 +1,24 @@
+{
+  "name": "picharvest",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PicHarvest 图仓 — ecommerce image downloader extension and landing page",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:source": "node scripts/build-source.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:e2e": "node scripts/test-extension.mjs",
+    "serve": "node scripts/serve.mjs",
+    "preview": "node scripts/preview-site.mjs",
+    "deploy": "npx --yes vercel@latest deploy --temporary site --yes --verify"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0",
+    "jszip": "^3.10.1",
+    "playwright": "^1.64.1"
+  }
+}

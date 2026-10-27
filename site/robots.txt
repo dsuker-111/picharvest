@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://picharvest-2026.surge.sh/sitemap.xml

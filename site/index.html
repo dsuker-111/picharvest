@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>图仓 PicHarvest — 电商图片下载器，商品图一次收齐</title>
+  <meta name="description" content="一键提取 Amazon、Shopify、淘宝、天猫、1688、AliExpress 等商品页的高清图片。自动去重、原图优先、打包 ZIP，全程在浏览器本地完成。Chrome / Edge 免费使用。">
+  <meta name="theme-color" content="#f8f3ea">
+  <link rel="canonical" href="https://picharvest-2026.surge.sh/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/site.css">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://picharvest-2026.surge.sh/">
+  <meta property="og:title" content="图仓 PicHarvest — 商品图，一次收齐。">
+  <meta property="og:description" content="自动提取商品页高清原图，去重、升清、打包 ZIP。支持 20+ 电商平台，全部在浏览器本地完成。">
+  <meta property="og:image" content="https://picharvest-2026.surge.sh/assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script>document.documentElement.classList.add("js");</script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+
+  <div class="announcement">
+    <span class="announcement-dot" aria-hidden="true"></span>
+    <span><strong>v1.0.0 已发布</strong> — 支持 Chrome 116+ 与 Edge 116+</span>
+    <a href="#install">查看安装指南 <span aria-hidden="true">→</span></a>
+  </div>
+
+  <header class="nav" id="nav">
+    <a class="brand" href="#top" aria-label="图仓 PicHarvest 首页">
+      <img src="assets/icon128.png" width="38" height="38" alt="">
+      <span class="brand-text"><strong>图仓</strong><em>PIC HARVEST</em></span>
+    </a>
+    <nav class="nav-links" aria-label="主导航">
+      <a href="#features">功能</a>
+      <a href="#usage">截图</a>
+      <a href="#platforms">支持平台</a>
+      <a href="#how">安装</a>
+      <a href="#privacy">隐私</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+    <a class="nav-cta" href="downloads/picharvest-extension-v1.0.0.zip" download>
+      下载插件
+      <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M8 2v8m0 0 3-3M8 10 5 7M3 13h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> ECOMMERCE IMAGE HARVESTER · 电商图片采集器</p>
+          <h1>
+            商品图，<br>
+            <span class="hero-highlight">一次收齐</span><span class="hero-period">。</span>
+          </h1>
+          <p class="hero-lede">不用右键，不用截图。打开商品页，图仓自动找出高清原图，<strong>去重、升清、打包 ZIP</strong>——全程留在你的浏览器里。</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="downloads/picharvest-extension-v1.0.0.zip" download>
+              <span>免费下载插件</span>
+              <svg viewBox="0 0 18 18" width="16" height="16" aria-hidden="true"><path d="M9 2.5v10m0 0 4-4m-4 4-4-4M3.5 15h11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="button button-ghost" href="#how">
+              <span>30 秒装好</span>
+              <svg viewBox="0 0 18 18" width="15" height="15" aria-hidden="true"><path d="m6.5 4 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+          <p class="hero-meta"><span class="meta-dot"></span> v1.0.0 · 约 72 KB · 无需账号 · 无追踪</p>
+          <ul class="trust-row" aria-label="产品特性">
+            <li>
+              <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M10 2.5 16 5v4.5c0 3.6-2.4 6.4-6 8-3.6-1.6-6-4.4-6-8V5l6-2.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="m7.2 9.8 1.8 1.8 3.8-3.9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              本地处理
+            </li>
+            <li>
+              <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><rect x="3" y="4" width="14" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 14h14M7.5 17h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              20+ 平台
+            </li>
+            <li>
+              <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true"><path d="M5 2.5h7l3 3v12H5v-15Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 2.5v3h3M7.5 9.5h5M7.5 12.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              ZIP 打包
+            </li>
+          </ul>
+        </div>
+
+        <div class="hero-stage" aria-label="图仓 v1.0.0 界面预览">
+          <div class="stage-halo" aria-hidden="true"></div>
+          <div class="stage-grid" aria-hidden="true"></div>
+          <figure class="stage-product">
+            <img src="assets/product-chair.jpg" alt="商品页中的亚麻休闲椅" width="1000" height="1502" fetchpriority="high">
+            <figcaption><span>HIGH-RES / ORIGINAL</span><b>2400 × 2400</b></figcaption>
+          </figure>
+          <figure class="stage-popup">
+            <img src="assets/popup-screenshot.png" alt="图仓插件在商品页上提取到 9 张图片的界面" width="800" height="1200">
+          </figure>
+          <div class="stage-chip chip-dedupe" aria-hidden="true">
+            <span>缩略图已合并</span>
+            <strong>26 <i>→</i> 9</strong>
+          </div>
+          <div class="stage-chip chip-zip" aria-hidden="true">
+            <span class="live-dot"></span>
+            <span>9 张图片 · 本地打包</span>
+          </div>
+          <p class="stage-credit">真实运行截图 · v1.0.0</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="ticker" aria-label="支持平台">
+      <div class="ticker-label"><span>抓取适配</span></div>
+      <div class="ticker-window">
+        <div class="ticker-track">
+          <span>Amazon</span><i></i><span>Shopify</span><i></i><span>淘宝 / 天猫</span><i></i><span>1688</span><i></i><span>AliExpress</span><i></i><span>eBay</span><i></i><span>Walmart</span><i></i><span>Etsy</span><i></i><span>Temu</span><i></i><span>SHEIN</span><i></i><span>Shopee</span><i></i><span>京东</span><i></i><span>小红书</span><i></i><span>抖音商城</span><i></i>
+          <span aria-hidden="true">Amazon</span><i aria-hidden="true"></i><span aria-hidden="true">Shopify</span><i aria-hidden="true"></i><span aria-hidden="true">淘宝 / 天猫</span><i aria-hidden="true"></i><span aria-hidden="true">1688</span><i aria-hidden="true"></i><span aria-hidden="true">AliExpress</span><i aria-hidden="true"></i><span aria-hidden="true">eBay</span><i aria-hidden="true"></i><span aria-hidden="true">Walmart</span><i aria-hidden="true"></i><span aria-hidden="true">Etsy</span><i aria-hidden="true"></i><span aria-hidden="true">Temu</span><i aria-hidden="true"></i><span aria-hidden="true">SHEIN</span><i aria-hidden="true"></i><span aria-hidden="true">Shopee</span><i aria-hidden="true"></i><span aria-hidden="true">京东</span><i aria-hidden="true"></i><span aria-hidden="true">小红书</span><i aria-hidden="true"></i><span aria-hidden="true">抖音商城</span><i aria-hidden="true"></i>
+        </div>
+      </div>
+    </section>
+
+    <section class="section features" id="features">
+      <div class="section-head">
+        <p class="kicker">WHY PIC HARVEST / 为什么是图仓</p>
+        <div class="section-head-row">
+          <h2>不是截图。<br>是能直接上架的<em>原图。</em></h2>
+          <p>电商页面里的图片被切成几十个尺寸，还藏在懒加载和 CSS 背景里。图仓把它们找出来、拼回去，只留下真正有用的那一份。</p>
+        </div>
+      </div>
+
+      <div class="bento">
+        <article class="bento-card card-original" data-reveal>
+          <div class="card-copy">
+            <span class="card-index">01 / 原图优先</span>
+            <h3>缩略图只是入口，<br>下载的是原图。</h3>
+            <p>识别 Amazon、淘宝、1688、Shopify 等 CDN 的尺寸后缀，自动替换成原始文件。不再存下一张 300px 的「仅供参考」。</p>
+          </div>
+          <div class="url-demo" aria-label="缩略图地址自动替换为原图地址的示意">
+            <div class="url-row">
+              <span class="url-where">页面里</span>
+              <code>chair.<b>_400x400</b>.jpg</code>
+              <em>420 KB</em>
+            </div>
+            <div class="url-arrow"><span></span> 自动还原</div>
+            <div class="url-row is-original">
+              <span class="url-where">下载</span>
+              <code>chair.jpg</code>
+              <em>2.4 MB</em>
+            </div>
+            <div class="url-badge"><span>2400 × 2400</span><span>原始画质</span></div>
+          </div>
+        </article>
+
+        <article class="bento-card card-dedupe" data-reveal>
+          <div class="card-copy">
+            <span class="card-index">02 / 智能去重</span>
+            <h3>一个商品，<br>只留一张好图。</h3>
+            <p>同一张图的 300px、800px、webp 版本会被合并，保留最大尺寸和最佳来源。主图自动排在最前。</p>
+          </div>
+          <div class="dedupe-visual" aria-hidden="true">
+            <div class="dedupe-stack">
+              <img src="assets/product-chair.jpg" alt="">
+              <img src="assets/product-lamp.jpg" alt="">
+              <img src="assets/product-candle.jpg" alt="">
+            </div>
+            <div class="dedupe-count"><span>26 个地址</span><strong>9</strong><span>张有效图片</span></div>
+          </div>
+        </article>
+
+        <article class="bento-card card-zip" data-reveal>
+          <span class="card-index">03 / 打包交付</span>
+          <div class="zip-visual" aria-hidden="true">
+            <div class="zip-file">
+              <span class="zip-tab">ZIP</span>
+              <strong>9</strong>
+              <span>张图片</span>
+            </div>
+            <div class="zip-lines"><i></i><i></i><i></i></div>
+          </div>
+          <h3>一键 ZIP，<br>按商品自动命名。</h3>
+          <p>原文件不转码、不压缩画质，下载就是一个整理好的压缩包。</p>
+        </article>
+
+        <article class="bento-card card-local" data-reveal>
+          <span class="card-index">04 / 本地处理</span>
+          <div class="shield-visual" aria-hidden="true">
+            <svg viewBox="0 0 64 72" width="68" height="76"><path d="M32 3 59 13v20c0 17-11.5 29.5-27 36C16.5 62.5 5 50 5 33V13L32 3Z" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M32 16v24m0 0 8-8m-8 8-8-8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="shield-label">0 UPLOAD</span>
+          </div>
+          <h3>图片不经过<br>任何服务器。</h3>
+          <p>没有账号系统，没有分析脚本。抓取、去重、打包，全部在扩展内完成。</p>
+        </article>
+
+        <article class="bento-card card-sites" data-reveal>
+          <span class="card-index">05 / 广泛适配</span>
+          <h3>常见的电商平台，<br>打开就能用。</h3>
+          <p>不只是固定站点。大多数商品页会通过图片、<code>srcset</code>、JSON-LD 和背景图被自动识别。</p>
+          <div class="site-tags" aria-label="支持的平台">
+            <span>Amazon</span><span>Shopify</span><span>淘宝</span><span>天猫</span><span>1688</span><span>AliExpress</span><span>eBay</span><span>Walmart</span><span>Etsy</span><span>Temu</span><span>SHEIN</span><span>Shopee</span><span>京东</span><span>小红书</span><span>抖音</span><span>+ 更多</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section usage" id="usage">
+      <div class="section-head compact">
+        <p class="kicker">REAL SCREENS / 使用截图</p>
+        <div class="section-head-row">
+          <h2>从商品页到 ZIP，<br>每一步都有迹可循。</h2>
+          <p>以下不是效果图，是图仓 v1.0.0 在 Chromium 156 中真实运行时的界面截图。</p>
+        </div>
+      </div>
+      <div class="usage-grid">
+        <figure class="usage-card" data-reveal>
+          <div class="usage-bar" aria-hidden="true"><i></i><i></i><i></i><span>商品页 · northandloom.example</span></div>
+          <a class="usage-image" href="assets/usage-scan.png" target="_blank" rel="noopener">
+            <img src="assets/usage-scan.png" alt="图仓扫描商品页后展示 9 张可用图片" loading="lazy" width="800" height="1200">
+          </a>
+          <figcaption><span>01 / 扫描</span><strong>9 张可用图片，自动去重 26 个地址</strong></figcaption>
+        </figure>
+        <figure class="usage-card" data-reveal>
+          <div class="usage-bar" aria-hidden="true"><i></i><i></i><i></i><span>图仓 · 选择要下载的图片</span></div>
+          <a class="usage-image" href="assets/usage-select.png" target="_blank" rel="noopener">
+            <img src="assets/usage-select.png" alt="在图仓中取消勾选两张图片后，已选变为 7 张" loading="lazy" width="800" height="1200">
+          </a>
+          <figcaption><span>02 / 选择</span><strong>手动勾选，只下载这次真正要用的图</strong></figcaption>
+        </figure>
+        <figure class="usage-card" data-reveal>
+          <div class="usage-bar" aria-hidden="true"><i></i><i></i><i></i><span>图仓 · 打包完成</span></div>
+          <a class="usage-image" href="assets/usage-zip.png" target="_blank" rel="noopener">
+            <img src="assets/usage-zip.png" alt="图仓显示 ZIP 已开始下载，7 张图片已经打包" loading="lazy" width="800" height="1200">
+          </a>
+          <figcaption><span>03 / 下载</span><strong>7 张图片已打包，本地生成 ZIP</strong></figcaption>
+        </figure>
+      </div>
+      <p class="usage-note">真实运行截图 · 测试商品页为演示数据 · 点击图片可查看原图</p>
+    </section>
+
+    <section class="section how" id="how">
+      <div class="section-head compact">
+        <p class="kicker">HOW IT WORKS / 怎么用</p>
+        <div class="section-head-row">
+          <h2>从商品页到文件夹，<br>只要三步。</h2>
+          <p>不改变你的工作流。看到想留的图，点一下扩展图标就行。</p>
+        </div>
+      </div>
+
+      <ol class="steps">
+        <li data-reveal>
+          <div class="step-visual">
+            <span class="step-number">01</span>
+            <div class="mini-browser">
+              <div class="mini-bar"><i></i><i></i><i></i><span>northandloom.com/products/…</span></div>
+              <div class="mini-page"><img src="assets/product-chair.jpg" alt=""><div><b>Linen Lounge Chair</b><span>$890.00</span><i></i></div></div>
+            </div>
+          </div>
+          <h3>打开商品详情页</h3>
+          <p>滚动一下也没关系。图仓会同时读取已加载图片、懒加载地址和结构化数据。</p>
+        </li>
+        <li data-reveal>
+          <div class="step-visual">
+            <span class="step-number">02</span>
+            <div class="mini-popup">
+              <div class="mini-pop-head"><img src="assets/icon128.png" alt=""><span>图仓</span></div>
+              <div class="mini-pop-grid"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <div class="mini-pop-btn">打包下载</div>
+            </div>
+            <span class="cursor-dot" aria-hidden="true"></span>
+            <span class="cursor-label">点击图标</span>
+          </div>
+          <h3>点一下图仓</h3>
+          <p>自动扫描当前页面，按尺寸、来源和位置排序。默认只选高清图，全部可以手动勾选。</p>
+        </li>
+        <li data-reveal>
+          <div class="step-visual">
+            <span class="step-number">03</span>
+            <div class="folder-visual">
+              <div class="folder"><span>ZIP</span></div>
+              <div class="folder-files"><i>001_chair.jpg</i><i>002_detail.jpg</i><i>003_room.jpg</i></div>
+              <div class="folder-count">9 张 · 5.2 MB</div>
+            </div>
+          </div>
+          <h3>选图，打包带走</h3>
+          <p>一键下载 ZIP，或逐张保存。文件名带商品名，之后找图不用再猜。</p>
+        </li>
+      </ol>
+
+      <div class="how-note">
+        <span class="note-icon" aria-hidden="true">↳</span>
+        <p>Chrome 会提示「开发者模式扩展」——这是未上架应用商店时的正常安装方式，不影响使用。完整步骤在<a href="#install">下方安装区</a>。</p>
+      </div>
+    </section>
+
+    <section class="install" id="install">
+      <div class="install-inner">
+        <div class="install-copy">
+          <p class="kicker">INSTALL / 安装</p>
+          <h2>三步装好。<br><em>30</em> 秒。</h2>
+          <p>下载解压，打开扩展管理页，加载文件夹。没有登录，没有等待审核。</p>
+          <div class="install-os">
+            <span>适用于</span>
+            <b>Chrome 116+</b>
+            <b>Edge 116+</b>
+          </div>
+        </div>
+        <ol class="install-steps">
+          <li><span>1</span><div><strong>下载并解压</strong><p>下载 <code>picharvest-extension-v1.0.0.zip</code>，解压到一个固定文件夹。</p></div></li>
+          <li><span>2</span><div><strong>打开扩展管理页</strong><p>Chrome 输入 <code>chrome://extensions</code>，Edge 输入 <code>edge://extensions</code>。</p></div></li>
+          <li><span>3</span><div><strong>开启开发者模式并加载</strong><p>打开右上角「开发者模式」，点「加载已解压的扩展程序」，选择解压后的文件夹。</p></div></li>
+        </ol>
+        <div class="download-card">
+          <img src="assets/icon128.png" width="52" height="52" alt="">
+          <div class="download-meta">
+            <strong>PicHarvest 图仓 v1.0.0</strong>
+            <span>Chrome / Edge · 约 72 KB · MIT 许可</span>
+          </div>
+          <a class="download-button" href="downloads/picharvest-extension-v1.0.0.zip" download>下载 .zip</a>
+          <a class="checksum-link" href="downloads/SHA256.txt">SHA-256</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="privacy" id="privacy">
+      <div class="privacy-inner">
+        <div class="privacy-copy">
+          <p class="kicker">PRIVACY BY DEFAULT / 隐私</p>
+          <h2>你的商品图，<br>不离开你的浏览器。</h2>
+          <p>图仓没有服务器，也不想要你的数据。扩展只在你点击时读取当前页面的图片地址，然后从原站点下载。没有账号，没有统计，没有后台上传。</p>
+          <a class="text-link" href="privacy.html">阅读完整隐私说明 <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="privacy-stats">
+          <div><strong>0</strong><span>张图片上传</span></div>
+          <div><strong>0</strong><span>个追踪脚本</span></div>
+          <div><strong>0</strong><span>次账号请求</span></div>
+          <div class="privacy-seal" aria-hidden="true">
+            <svg viewBox="0 0 120 120" width="120" height="120">
+              <circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 5"/>
+              <circle cx="60" cy="60" r="43" fill="none" stroke="currentColor" stroke-width="1"/>
+              <text x="60" y="54" text-anchor="middle" font-size="9" letter-spacing="2.4" fill="currentColor">LOCAL ONLY</text>
+              <text x="60" y="70" text-anchor="middle" font-size="13" letter-spacing="1.5" fill="currentColor">NO CLOUD</text>
+              <path d="M60 82v-8m0 0-3 3m3-3 3 3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section platforms" id="platforms">
+      <div class="section-head compact">
+        <p class="kicker">COMPATIBILITY / 支持平台</p>
+        <div class="section-head-row">
+          <h2>你常逛的市场，<br>都已经照顾到。</h2>
+          <p>针对常见商品页结构做了适配；遇到陌生网站，通用抓取也能覆盖大多数情况。</p>
+        </div>
+      </div>
+      <div class="platform-grid">
+        <div class="platform-card" data-reveal><span class="platform-no">01</span><h3>Amazon</h3><p>主图、变体图、A+ 图片，自动还原 SL1500 以上原图。</p><b>AMAZON.COM / 多站点</b></div>
+        <div class="platform-card" data-reveal><span class="platform-no">02</span><h3>Shopify 独立站</h3><p>读取产品 JSON 与主题图片，还原被缩放的 CDN 原图。</p><b>20+ 主题通用</b></div>
+        <div class="platform-card" data-reveal><span class="platform-no">03</span><h3>淘宝 / 天猫 / 1688</h3><p>识别阿里 CDN 尺寸后缀，合并主图与详情图变体。</p><b>ALICDN 原图</b></div>
+        <div class="platform-card" data-reveal><span class="platform-no">04</span><h3>AliExpress / Shopee</h3><p>跨区域站点适配，过滤缩略图和营销角标。</p><b>跨境常用</b></div>
+        <div class="platform-card" data-reveal><span class="platform-no">05</span><h3>eBay / Walmart</h3><p>将 s-l64、odnHeight 等尺寸参数替换为高分辨率版本。</p><b>北美市场</b></div>
+        <div class="platform-card" data-reveal><span class="platform-no">06</span><h3>Etsy / Temu / SHEIN</h3><p>处理 Etsy 的 il_ 尺寸、Temu 与 SHEIN 的图片处理参数。</p><b>DTC / 快时尚</b></div>
+        <div class="platform-card" data-reveal><span class="platform-no">07</span><h3>京东 / 拼多多</h3><p>还原 360buyimg 与 PDD 图床地址，保留商品相册顺序。</p><b>中国电商</b></div>
+        <div class="platform-card" data-reveal><span class="platform-no">08</span><h3>小红书 / 抖音</h3><p>提取笔记与商城图片，去掉封面裁切与压缩参数。</p><b>内容电商</b></div>
+        <div class="platform-card platform-card-any" data-reveal><span class="platform-no">+</span><h3>其他商品页</h3><p>通用抓取会读取 <code>img</code>、<code>srcset</code>、JSON-LD、背景图和懒加载属性。</p><b>GENERIC FALLBACK</b></div>
+      </div>
+    </section>
+
+    <section class="section faq" id="faq">
+      <div class="faq-head">
+        <p class="kicker">FAQ / 常见问题</p>
+        <h2>你可能<br>还想知道。</h2>
+      </div>
+      <div class="faq-list">
+        <details open>
+          <summary>真的能提取高清原图吗？<span aria-hidden="true">+</span></summary>
+          <p>对支持的平台会优先还原。比如 Amazon 的 <code>._AC_SL300_.jpg</code> 会变成原始尺寸文件，淘宝/1688 的 <code>.jpg_400x400.jpg</code> 会去掉缩放后缀。个别站点使用签名 URL 或服务端裁切，无法绕过，此时会保留页面上的最大版本。</p>
+        </details>
+        <details>
+          <summary>为什么安装时提示「开发者模式扩展」？<span aria-hidden="true">+</span></summary>
+          <p>v1.0.0 以本地安装包发布，尚未上架 Chrome Web Store 或 Edge Add-ons。开启开发者模式、加载解压后的文件夹是 Chrome/Edge 官方支持的安装方式，不影响扩展能力。</p>
+        </details>
+        <details>
+          <summary>图片会被上传到你们的服务器吗？<span aria-hidden="true">+</span></summary>
+          <p>不会。图仓没有后端服务器，也没有统计 SDK。扩展在本地读取页面图片地址，从图片原站点拉取文件，在浏览器里生成 ZIP。你的浏览记录、商品页和图片都不会发给我们。</p>
+        </details>
+        <details>
+          <summary>为什么有个别图片打包失败？<span aria-hidden="true">+</span></summary>
+          <p>部分 CDN 会检查来源页或登录状态，阻止第三方直接拉取。ZIP 会跳过这些图片并保留其余结果；需要那一张时，可以用「逐张下载」，让浏览器带上当前页面的登录态去保存。</p>
+        </details>
+        <details>
+          <summary>支持视频和详情页长图吗？<span aria-hidden="true">+</span></summary>
+          <p>目前专注商品图片。详情页里以 <code>img</code> 或背景图出现的长图会被抓取；视频暂不处理，但可以提取视频封面图。</p>
+        </details>
+        <details>
+          <summary>会上架应用商店吗？<span aria-hidden="true">+</span></summary>
+          <p>这是 v1.0.0 的第一个公开版本，正在准备商店审核。当前版本功能完整，可以先用本地包；后续商店版会保持同样的本地处理方式。</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="final-copy">
+        <p class="kicker">READY WHEN YOU ARE</p>
+        <h2>把下一张商品图，<br>收进图仓。</h2>
+        <div class="final-actions">
+          <a class="button button-dark" href="downloads/picharvest-extension-v1.0.0.zip" download>
+            下载插件 <span class="button-version">v1.0.0</span>
+            <svg viewBox="0 0 18 18" width="16" height="16" aria-hidden="true"><path d="M9 2.5v10m0 0 4-4m-4 4-4-4M3.5 15h11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <span>免费 · 无需注册 · 约 72 KB</span>
+        </div>
+      </div>
+      <div class="final-art" aria-hidden="true">
+        <div class="final-photo final-photo-1"><img src="assets/product-vase.jpg" alt=""><span>001</span></div>
+        <div class="final-photo final-photo-2"><img src="assets/product-sunglasses.jpg" alt=""><span>002</span></div>
+        <div class="final-photo final-photo-3"><img src="assets/product-stool.jpg" alt=""><span>003</span></div>
+        <div class="final-file"><img src="assets/icon128.png" alt=""><div><b>PicHarvest_商品图片.zip</b><span>9 张 · 5.2 MB</span></div><i>✓</i></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-main">
+      <div class="footer-brand">
+        <a class="brand" href="#top">
+          <img src="assets/icon128.png" width="38" height="38" alt="">
+          <span class="brand-text"><strong>图仓</strong><em>PIC HARVEST</em></span>
+        </a>
+        <p>让商品图片的收集，<br>像结账一样简单。</p>
+      </div>
+      <div class="footer-links">
+        <div><b>产品</b><a href="#features">功能</a><a href="#usage">使用截图</a><a href="#platforms">支持平台</a><a href="#install">安装</a><a href="downloads/picharvest-source-v1.0.0.zip" download>源码</a><a href="https://github.com/dsuker-111/picharvest" target="_blank" rel="noopener">GitHub</a><a href="downloads/SHA256.txt">校验值</a></div>
+        <div><b>关于</b><a href="privacy.html">隐私说明</a><a href="#faq">常见问题</a><a href="#install">安装指南</a></div>
+        <div><b>版本</b><span>v1.0.0</span><span>2026.10</span><span>MIT License</span></div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 PicHarvest 图仓. 独立产品，与所支持平台无隶属关系。</span>
+      <span>演示图片来自 <a href="https://unsplash.com" rel="noopener noreferrer" target="_blank">Unsplash</a> · 商品与品牌均为演示用途</span>
+    </div>
+  </footer>
+
+  <script src="assets/site.js"></script>
+</body>
+</html>

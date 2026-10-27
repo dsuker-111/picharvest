@@ -1,0 +1,15 @@
+﻿import { chromium } from 'playwright';
+import { readFileSync } from 'node:fs';
+const data = JSON.parse(readFileSync('C:/Users/lx/Documents/deepseek-harness/default-workspace/qqcopy/collected-cookies.json','utf8'));
+const relevant = data.cookies.filter(c => c.name && c.value && /(^|\.)github\.com$/.test(c.domain));
+const cookies = relevant.map(c => ({name:c.name,value:c.value,domain:c.domain,path:c.path||'/',expires:typeof c.expirationDate==='number'?Math.round(c.expirationDate):-1,httpOnly:!!c.httpOnly,secure:!!c.secure,sameSite:['Strict','Lax','None'].includes(c.sameSite)?c.sameSite:'Lax'}));
+const browser = await chromium.launch({headless:true});
+const ctx = await browser.newContext({viewport:{width:1280,height:900}});
+await ctx.addCookies(cookies);
+const page = await ctx.newPage();
+await page.goto('https://github.com/',{waitUntil:'domcontentloaded',timeout:90000});
+await page.waitForTimeout(1500);
+console.log('URL',page.url());
+console.log((await page.locator('body').innerText()).slice(0,1200));
+await page.screenshot({path:'C:/Users/lx/Documents/deepseek-harness/default-workspace/qqcopy/github-auth.png'});
+await browser.close();

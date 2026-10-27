@@ -1,0 +1,13 @@
+﻿import { chromium } from 'playwright';
+const browser=await chromium.launch({headless:true});
+const page=await browser.newPage({viewport:{width:390,height:844}});
+const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+await page.goto('https://picharvest-2026.surge.sh/',{waitUntil:'networkidle',timeout:60000});
+const m=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,iw:innerWidth,title:document.title,download:[...document.querySelectorAll('a[download]')].map(a=>a.getAttribute('href'))}));
+console.log(m);
+await page.screenshot({path:'C:/Users/lx/Documents/deepseek-harness/default-workspace/qqcopy/surge-mobile.png',fullPage:false});
+const p=await browser.newPage({viewport:{width:1280,height:900}});
+await p.goto('https://picharvest-2026.surge.sh/privacy.html',{waitUntil:'networkidle',timeout:60000});
+console.log('privacy',await p.title());
+console.log('errors',errors);
+await browser.close();

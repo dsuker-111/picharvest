@@ -1,0 +1,14 @@
+﻿import { chromium } from 'playwright';
+const browser = await chromium.launch({headless:true});
+const ctx = await browser.newContext({viewport:{width:1440,height:1000}});
+const page = await ctx.newPage();
+await page.goto('https://www.miaoda.cn/',{waitUntil:'networkidle',timeout:60000});
+await page.locator('textarea').first().fill('生成一个极简的电商图片下载器介绍网页，主色橙色，中文');
+const buttons = await page.locator('button').allTextContents();
+console.log('buttons', buttons.filter(Boolean).slice(-20));
+await page.keyboard.press('Enter');
+await page.waitForTimeout(5000);
+console.log('url', page.url());
+console.log((await page.locator('body').innerText()).slice(0,2000));
+await page.screenshot({path:'qqcopy/miaoda-submit.png'});
+await browser.close();

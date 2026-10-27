@@ -1,0 +1,11 @@
+﻿import { readFileSync } from 'node:fs';
+import { JSDOM } from 'jsdom';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const core = require('..\/extension/src/extractor.js');
+const html = readFileSync('./tests/fixtures/product.html','utf8');
+const dom = new JSDOM(html,{url:'http://127.0.0.1:4173/products/linen-lounge-chair'});
+const r = core.scanDocument(dom.window.document, dom.window.location, {minDimension:800});
+console.log(r.images.map(i=>({url:i.url,w:i.width,h:i.height,source:i.source,featured:i.featured})));
+console.log(r.stats);
+console.log([...dom.window.document.querySelectorAll('img')].map(i=>[i.getAttribute('src'),i.getAttribute('width'),i.naturalWidth]));

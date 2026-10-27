@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <style>
+    @font-face { font-family: "OgSans"; src: local("Microsoft YaHei UI"), local("Microsoft YaHei"), local("PingFang SC"); }
+    * { box-sizing: border-box; }
+    html, body { width: 1200px; height: 630px; margin: 0; overflow: hidden; }
+    body {
+      position: relative;
+      padding: 58px 62px;
+      background: #f7f1e6;
+      color: #1a1610;
+      font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    }
+    body::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image: radial-gradient(rgba(61,44,24,.18) .7px, transparent .8px);
+      background-size: 7px 7px; opacity: .28;
+    }
+    .brand { position: relative; display: flex; align-items: center; gap: 12px; }
+    .brand img { width: 46px; height: 46px; border-radius: 13px; }
+    .brand b { font-size: 21px; letter-spacing: -.05em; }
+    .brand span { margin-left: 6px; padding-left: 11px; border-left: 1px solid #c9bca8; color: #7c705f; font: 9px Consolas, monospace; letter-spacing: .14em; }
+    h1 { position: relative; z-index: 2; margin: 48px 0 22px; font-size: 94px; font-weight: 800; letter-spacing: -.085em; line-height: .99; }
+    h1 em { color: #ee5a32; font-style: normal; }
+    .sub { position: relative; z-index: 2; max-width: 620px; margin: 0; color: #5d5244; font-size: 19px; line-height: 1.7; }
+    .meta { position: absolute; left: 62px; bottom: 45px; display: flex; align-items: center; gap: 10px; color: #7c705f; font: 11px Consolas, monospace; }
+    .meta i { width: 6px; height: 6px; border-radius: 50%; background: #2d7b52; }
+    .circle { position: absolute; top: 36px; right: 40px; width: 390px; height: 390px; border-radius: 50%; background: #dce99b; opacity: .7; }
+    .photo { position: absolute; top: 67px; right: 76px; width: 248px; height: 350px; overflow: hidden; border: 7px solid #fffaf0; border-radius: 14px; box-shadow: 0 24px 40px rgba(55,35,10,.2); transform: rotate(4deg); }
+    .photo img { width: 100%; height: 100%; object-fit: cover; }
+    .popup { position: absolute; z-index: 3; top: 123px; right: 240px; width: 292px; overflow: hidden; border: 1px solid #ddcfba; border-radius: 17px; background: #f7f1e6; box-shadow: 0 30px 55px rgba(45,28,9,.25); transform: rotate(-3deg); }
+    .popup img { display: block; width: 100%; }
+    .tag { position: absolute; z-index: 4; right: 56px; bottom: 63px; padding: 11px 15px; border: 1px solid #ded2bf; border-radius: 9px; background: rgba(255,250,240,.96); box-shadow: 0 12px 25px rgba(50,32,10,.14); font: 10px Consolas, monospace; }
+    .tag b { display: block; margin-top: 3px; font-size: 17px; font-weight: 600; letter-spacing: -.04em; }
+    .tag b i { color: #ee5a32; font-style: normal; }
+  </style>
+</head>
+<body>
+  <div class="brand"><img src="assets/icon128.png" alt=""><b>图仓 PicHarvest</b><span>ECOMMERCE IMAGE HARVESTER</span></div>
+  <h1>商品图，<br><em>一次收齐。</em></h1>
+  <p class="sub">自动提取商品页高清原图，智能去重、原图优先、打包 ZIP。<br>支持 20+ 电商平台，全程在浏览器本地完成。</p>
+  <div class="circle"></div>
+  <div class="photo"><img src="assets/product-chair.jpg" alt=""></div>
+  <div class="popup"><img src="assets/popup-screenshot.png" alt=""></div>
+  <div class="tag">缩略图已合并<b>26 <i>→</i> 9 张</b></div>
+  <div class="meta"><i></i> v1.0.0 · CHROME / EDGE · LOCAL ONLY</div>
+</body>
+</html>
