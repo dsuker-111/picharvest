@@ -35,7 +35,14 @@ BASE_URL = os.environ.get(
     "DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
 ).rstrip("/")
 MODEL_NAME = os.environ.get("MODEL_NAME", "deepseek-v4.1-flash")
-PORT = int(os.environ.get("PORT", "8000"))
+PORT = int(os.environ.get("PORT", "8123"))
+
+# ---- 本地部署模型（可选）----
+# 由 server/local_model.py 提供，默认端口 8100，避免与常见 8000 端口冲突。
+LOCAL_MODEL_URL = os.environ.get("LOCAL_MODEL_URL", "http://127.0.0.1:8100").rstrip("/")
+LOCAL_MODEL_NAME = os.environ.get("LOCAL_MODEL_NAME", "Qwen2.5-0.5B + LoRA（本地）")
+# 默认走云端；前端可在请求里用 provider 覆盖
+DEFAULT_PROVIDER = os.environ.get("DEFAULT_PROVIDER", "cloud").lower()
 
 SYSTEM_PROMPT = (
     "你是「图仓 PicHarvest」官网的 AI 助手，服务对象是电商运营、设计师和选品人员。\n\n"
@@ -129,6 +136,61 @@ def call_dashscope(messages, max_tokens=512, temperature=0.7):
     return (message.get("content") or "").strip()
 
 
+def probe_local(timeout=2):
+    """探测本地模型服务是否在线。"""
+    if not LOCAL_MODEL_URL:
+        return False
+    try:
+        req = urllib.request.Request(LOCAL_MODEL_URL + "/health", method="GET")
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
+def call_local(prompt, history=None, max_tokens=512, temperature=0.0):
+    """转发到本地部署的 transformers 模型服务（server/local_model.py）。"""
+    if not LOCAL_MODEL_URL:
+        raise RuntimeError("未配置 LOCAL_MODEL_URL")
+
+    payload = {
+        "prompt": prompt,
+        "max_new_tokens": int(max_tokens),
+        "temperature": float(temperature),
+    }
+    if history:
+        payload["history"] = history
+
+    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        LOCAL_MODEL_URL + "/chat",
+        data=data,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        # 本地 CPU/GPU 推理可能较慢，给足超时
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "ignore")[:300]
+        raise RuntimeError("本地模型 HTTP %s：%s" % (exc.code, detail))
+    except urllib.error.URLError as exc:
+        raise RuntimeError(
+            "无法连接本地模型（%s）：%s。请先运行 server/local_model.py"
+            % (LOCAL_MODEL_URL, getattr(exc, "reason", exc))
+        )
+    except TimeoutError:
+        raise RuntimeError("本地模型推理超时。")
+
+    if not isinstance(body, dict):
+        raise RuntimeError("本地模型返回格式异常")
+    answer = body.get("answer") or body.get("content") or ""
+    if not answer:
+        raise RuntimeError(body.get("error") or "本地模型返回空内容")
+    return str(answer).strip()
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "PersonalSiteAIProxy/1.0"
 
@@ -159,12 +221,20 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.split("?")[0] == "/health":
+            local_ok = probe_local()
             self._send_json(200, {
                 "status": "ok",
                 "provider": "aliyun-dashscope",
                 "model": MODEL_NAME,
                 "base_url": BASE_URL,
                 "key_configured": bool(API_KEY),
+                # 双后端可用性，前端据此启用 / 禁用「本地模型」按钮
+                "providers": {
+                    "cloud": bool(API_KEY),
+                    "local": local_ok,
+                },
+                "default_provider": DEFAULT_PROVIDER,
+                "local_url": LOCAL_MODEL_URL,
             })
         else:
             self._send_json(404, {"error": "not found"})
@@ -187,16 +257,33 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(200, {"answer": "", "model": MODEL_NAME})
             return
 
-        messages = build_messages(prompt, body.get("history"))
+        provider = (body.get("provider") or DEFAULT_PROVIDER or "cloud").lower()
         max_tokens = body.get("max_tokens") or body.get("max_new_tokens") or 512
         temperature = body.get("temperature", 0.7)
 
+        # ---- 本地部署模型 ----
+        if provider == "local":
+            try:
+                answer = call_local(prompt, history=body.get("history"),
+                                    max_tokens=max_tokens, temperature=temperature)
+                self._send_json(200, {"answer": answer, "model": LOCAL_MODEL_NAME, "provider": "local"})
+            except RuntimeError as exc:
+                self._send_json(200, {"answer": "", "error": str(exc),
+                                      "model": LOCAL_MODEL_NAME, "provider": "local"})
+            except Exception as exc:
+                self._send_json(200, {"answer": "", "error": "本地模型异常：%s" % exc,
+                                      "model": LOCAL_MODEL_NAME, "provider": "local"})
+            return
+
+        # ---- 云端阿里云百炼 ----
+        messages = build_messages(prompt, body.get("history"))
+
         try:
             answer = call_dashscope(messages, max_tokens, temperature)
-            self._send_json(200, {"answer": answer, "model": MODEL_NAME})
+            self._send_json(200, {"answer": answer, "model": MODEL_NAME, "provider": "cloud"})
         except RuntimeError as exc:
             # 返回 200 + 错误说明，前端可直接展示
-            self._send_json(200, {"answer": "", "error": str(exc), "model": MODEL_NAME})
+            self._send_json(200, {"answer": "", "error": str(exc), "model": MODEL_NAME, "provider": "cloud"})
         except Exception as exc:  # 兜底
             self._send_json(200, {"answer": "", "error": "代理异常：%s" % exc})
 

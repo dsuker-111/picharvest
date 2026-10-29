@@ -15,20 +15,29 @@
 - **源码校验**：`site/downloads/SOURCE-SHA256.txt`
 - **许可**：MIT
 
-> **内置 AI 对话（阿里云百炼）**：官网右下角有「AI 助手」浮动按钮，点开即可对话。前端按以下顺序自动探测后端，全部通过阿里云百炼 DashScope 的 OpenAI 兼容接口应答，**API Key 只保存在服务端，不进入前端代码**：
+> **内置 AI 对话（可切换云端 / 本地）**：官网右下角「AI 助手」浮动按钮打开对话框，顶部可在两种模型间切换，选择会记在 `localStorage`：
 >
-> 1. `window.PIC_HARVEST_AI_API`（手动指定）
-> 2. 同域 `/api`（`server-vercel/`，公网部署后他人也能用）
-> 3. `http://127.0.0.1:8000`（`server/cloud_api.py`，仅本机）
+> | 选项 | 后端 | 说明 |
+> | --- | --- | --- |
+> | 云端 · 百炼 | 阿里云 DashScope | `deepseek-v4.1-flash`，需要 `DASHSCOPE_API_KEY` |
+> | 本地 · LoRA | `server/local_model.py` | TRAE 里微调的 Qwen2.5-0.5B + LoRA，端口 8100，无需联网、无调用费用 |
+>
+> 前端按 `window.PIC_HARVEST_AI_API` → 同域 `/api` → `127.0.0.1:8123` → `127.0.0.1:8000` 顺序自动探测代理；代理再根据请求里的 `provider` 字段路由到云端或本地。**API Key 只保存在服务端，不进入前端代码。**
 >
 > 本机快速体验：
 >
 > ```bash
+> # 云端
 > set DASHSCOPE_API_KEY=sk-你的密钥
-> python server/cloud_api.py
+> python server/cloud_api.py        # 默认 8123
+>
+> # 本地（另开一个窗口，需先 pip install -r server/requirements.txt）
+> python server/local_model.py      # 默认 8100
 > ```
 >
-> 想让**任何访客**都能用，部署 [server-vercel/README.md](server-vercel/README.md)：`cd server-vercel && npx vercel --prod`，再配 `DASHSCOPE_API_KEY` 环境变量。详见 [server/README.md](server/README.md)。
+> 也可双击 `scripts/start-ai-public.bat`（云端 + 公网）或 `scripts/start-local-model.bat`（本地模型）。
+>
+> 想让**任何访客**都能用，部署 [server-vercel/README.md](server-vercel/README.md)。详见 [server/README.md](server/README.md)。
 
 ![图仓界面](site/assets/popup-screenshot.png)
 

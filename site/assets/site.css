@@ -1735,6 +1735,38 @@ h1, h2, h3, p { margin-top: 0; }
   scrollbar-color: #d4c7b5 transparent;
   scrollbar-width: thin;
 }
+
+/* 云端 / 本地 模型切换 */
+.ai-chat-switch {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper-2, #f6f1e8);
+}
+.ai-switch-btn {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.ai-switch-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); }
+.ai-switch-btn.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.ai-switch-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
 .ai-msg { display: flex; margin-bottom: 12px; }
 .ai-msg-user { justify-content: flex-end; }
 .ai-bubble {

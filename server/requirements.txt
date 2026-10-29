@@ -1,6 +1,16 @@
-# 图仓官网 AI 对话框 · 阿里云百炼代理
+# 图仓官网 AI 对话框 · 依赖说明
 #
-# cloud_api.py 只使用 Python 标准库，无需安装任何第三方依赖。
-# 直接运行：python server/cloud_api.py
+# ── 云端代理（server/cloud_api.py）────────────────────────────
+# 只用 Python 标准库，无需安装任何依赖：
+#     python server/cloud_api.py
 #
-# （如需改用本地 TRAE 训练模型方案，才需要 torch / transformers / peft / accelerate）
+# ── 本地模型（server/local_model.py）──────────────────────────
+# 需要 PyTorch + Transformers + PEFT，建议用独立虚拟环境安装：
+#     pip install -r server/requirements.txt
+#
+# 若只使用云端百炼，无需安装下面的包。
+
+torch
+transformers
+peft
+accelerate

@@ -11,11 +11,16 @@
  * API Key 只保存在服务端环境变量中，浏览器与页面源码都不含密钥。
  */
 (() => {
-  const LOCAL_BASE = "http://127.0.0.1:8000";
+  const LOCAL_BASES = ["http://127.0.0.1:8123", "http://127.0.0.1:8000"];
   const SAME_ORIGIN_BASE = ""; // 同域，路径 /api/chat
+
+  function isLocalBase(base) {
+    return LOCAL_BASES.includes(base);
+  }
 
   const CHAT_OPEN_KEY = "picharvest-ai-chat-open";
   const HISTORY_KEY = "picharvest-ai-history";
+  const PROVIDER_KEY = "picharvest-ai-provider";
   const MAX_HISTORY = 12;
 
   const root = document.getElementById("aiChat");
@@ -28,11 +33,30 @@
   const input = document.getElementById("aiChatInput");
   const sendBtn = form.querySelector(".ai-chat-send");
   const statusEl = document.getElementById("aiChatStatus");
+  const switchBtns = root.querySelectorAll(".ai-switch-btn");
+  const switchWrap = root.querySelector(".ai-chat-switch");
 
   let baseUrl = null; // 探测结果
   let hint = ""; // 状态附注
   let busy = false;
   let history = loadHistory();
+  let provider = loadProvider(); // "cloud" | "local"
+  let availability = { cloud: false, local: false };
+
+  function loadProvider() {
+    try {
+      const v = localStorage.getItem(PROVIDER_KEY);
+      return v === "local" ? "local" : "cloud";
+    } catch (_) {
+      return "cloud";
+    }
+  }
+
+  function saveProvider(v) {
+    try {
+      localStorage.setItem(PROVIDER_KEY, v);
+    } catch (_) {}
+  }
 
   function loadHistory() {
     try {
@@ -67,6 +91,29 @@
     statusEl.dataset.tone = tone || "idle";
   }
 
+  /** 同步「云端 / 本地」切换按钮的选中态与可用性。 */
+  function syncProviderUI() {
+    if (!switchBtns.length) return;
+    switchBtns.forEach((btn) => {
+      const p = btn.dataset.provider;
+      const active = p === provider;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+
+      if (p === "local") {
+        const ok = availability.local;
+        btn.disabled = !ok;
+        btn.title = ok
+          ? "使用本机部署的 Qwen2.5 + LoRA 模型"
+          : "本地模型未启动：请运行 python server/local_model.py";
+      } else {
+        btn.disabled = false;
+        btn.title = "使用阿里云百炼（deepseek-v4.1-flash）";
+      }
+    });
+    if (switchWrap) switchWrap.dataset.provider = provider;
+  }
+
   function setBusy(state) {
     busy = state;
     sendBtn.disabled = state || !input.value.trim();
@@ -89,7 +136,7 @@
     const candidates = [];
     if (explicit) candidates.push(explicit);
     candidates.push(SAME_ORIGIN_BASE); // 同域 /api
-    candidates.push(LOCAL_BASE);
+    LOCAL_BASES.forEach((b) => candidates.push(b));
 
     for (const base of candidates) {
       const url = (base || "") + "/api/health";
@@ -108,13 +155,36 @@
           const model = (data && data.model) || "阿里云百炼";
           const keyOk = !data || data.key_configured !== false;
 
+          // 记录双后端可用性，用于启用 / 禁用「本地」按钮
+          const p = (data && data.providers) || {};
+          availability = {
+            cloud: p.cloud !== false && keyOk,
+            local: p.local === true
+          };
+          syncProviderUI();
+
           if (!keyOk) {
             setStatus("代理已连接，但服务端未配置 DASHSCOPE_API_KEY", "off");
             hint = "服务端缺少 DASHSCOPE_API_KEY";
             return false;
           }
-          const scope = base === LOCAL_BASE ? "本机代理" : "云端代理";
-          setStatus(scope + " · " + model, "ok");
+
+          // 用户选了本地但本地没起来 -> 自动回退云端并说明
+          if (provider === "local" && !availability.local) {
+            provider = "cloud";
+            saveProvider("cloud");
+            syncProviderUI();
+            setStatus("本地模型未启动，已切回云端 · " + model, "off");
+            hint = "本地模型未启动";
+            return true;
+          }
+
+          const scope = isLocalBase(base) ? "本机代理" : "云端代理";
+          if (provider === "local") {
+            setStatus("本地模型 · " + (data.local_model || "LoRA"), "ok");
+          } else {
+            setStatus(scope + " · " + model, "ok");
+          }
           hint = "";
           return true;
         } catch (_) {
@@ -144,14 +214,14 @@
     if (baseUrl === null && !(await probe())) {
       bubble.textContent =
         "AI 服务暂时不可用。\n" +
-        "请稍后重试；如果是本机部署，请确认已运行 server/cloud_api.py（端口 8000）。";
+        "请稍后重试；如果是本机部署，请确认已运行 server/cloud_api.py（端口 8123）。";
       pending.classList.remove("ai-msg-pending");
       setBusy(false);
       return;
     }
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 120000);
+    const timer = setTimeout(() => controller.abort(), 180000);
     let answer = "";
     let failed = false;
 
@@ -159,7 +229,14 @@
       const res = await fetch(chatUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: text, history, max_tokens: 700, temperature: 0.6 }),
+        body: JSON.stringify({
+          prompt: text,
+          history,
+          provider, // "cloud" | "local"
+          // 本地 0.5B 模型不需要长输出，短一点更快
+          max_tokens: provider === "local" ? 320 : 700,
+          temperature: provider === "local" ? 0.3 : 0.6
+        }),
         signal: controller.signal
       });
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -173,9 +250,9 @@
       }
     } catch (error) {
       failed = true;
-      const isLocal = baseUrl === LOCAL_BASE;
+      const isLocal = isLocalBase(baseUrl);
       answer = isLocal
-        ? "未连接到本机 AI 代理。\n请运行 server/cloud_api.py（端口 8000）并配置 DASHSCOPE_API_KEY 后重试。"
+        ? "未连接到本机 AI 代理。\n请运行 server/cloud_api.py（端口 8123）并配置 DASHSCOPE_API_KEY 后重试。"
         : "调用 AI 服务失败：" + (error && error.message ? error.message : String(error));
       setStatus("调用失败", "off");
     } finally {
@@ -229,6 +306,28 @@
   toggle.addEventListener("click", () => setOpen(!root.classList.contains("is-open")));
   closeBtn.addEventListener("click", () => setOpen(false));
   root.querySelector(".ai-chat-backdrop").addEventListener("click", () => setOpen(false));
+
+  // 云端 / 本地 切换
+  switchBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.disabled || busy) return;
+      const next = btn.dataset.provider;
+      if (next === provider) return;
+      provider = next;
+      saveProvider(provider);
+      syncProviderUI();
+      // 切换后重新探测，让状态栏显示对应模型
+      probe();
+      addMessage(
+        "ai",
+        provider === "local"
+          ? "已切换到【本地模型】（本机 Qwen2.5 + LoRA）。回答由你电脑上的模型生成。"
+          : "已切换到【云端模型】（阿里云百炼 deepseek-v4.1-flash）。"
+      );
+    });
+  });
+
+  syncProviderUI();
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();

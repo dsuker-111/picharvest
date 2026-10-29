@@ -23,7 +23,7 @@ const types = {
   ".xml": "application/xml"
 };
 
-const AI_PROXY = process.env.AI_PROXY || "http://127.0.0.1:8000";
+const AI_PROXY = process.env.AI_PROXY || "http://127.0.0.1:8123";
 
 /**
  * 本地预览时把 /api/* 转发到本机 AI 代理，

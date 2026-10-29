@@ -1,4 +1,4 @@
-# PicHarvest → Gitee 部署脚本
+﻿# PicHarvest → Gitee 部署脚本
 # 使用方法：在 PowerShell 中执行
 #   cd C:\Users\lx\Documents\deepseek-harness\default-workspace\picharvest
 #   .\scripts\deploy-gitee.ps1

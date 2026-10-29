@@ -456,6 +456,11 @@
         </button>
       </header>
 
+      <div class="ai-chat-switch" role="group" aria-label="选择模型来源">
+        <button type="button" class="ai-switch-btn is-active" data-provider="cloud" aria-pressed="true">云端 · 百炼</button>
+        <button type="button" class="ai-switch-btn" data-provider="local" aria-pressed="false" disabled>本地 · LoRA</button>
+      </div>
+
       <div class="ai-chat-messages" id="aiChatMessages" aria-live="polite"></div>
 
       <form class="ai-chat-form" id="aiChatForm" novalidate>
@@ -473,7 +478,7 @@
 
   <script src="assets/site.js"></script>
 <!-- AI 代理地址：由 scripts/set-ai-endpoint.mjs 写入 -->
-  <script>window.PIC_HARVEST_AI_API = "https://adjacent-women-regions-deutsche.trycloudflare.com";</script>
+  <script>window.PIC_HARVEST_AI_API = "https://accessory-bean-rain-recommended.trycloudflare.com";</script>
   <script src="assets/ai-chat.js"></script>
 </body>
 </html>

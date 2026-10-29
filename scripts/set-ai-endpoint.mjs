@@ -12,7 +12,8 @@ const url = (process.argv[2] || "").trim().replace(/\/+$/, "");
 
 let html = readFileSync(file, "utf8");
 const start = "<!-- AI 代理地址：由 scripts/set-ai-endpoint.mjs 写入 -->";
-const re = /  <!-- AI 代理地址：由 scripts\/set-ai-endpoint\.mjs 写入 -->\r?\n  <script>window\.PIC_HARVEST_AI_API = "[^"]*";<\/script>\r?\n/;
+// 注释行可能缺失或缩进不一致，这里宽松匹配脚本行本身，避免隧道重启后写不进去。
+const re = /[ \t]*(?:<!--[^\n]*AI 代理地址[^\n]*-->\r?\n[ \t]*)?<script>window\.PIC_HARVEST_AI_API = "[^"]*";<\/script>\r?\n/;
 
 if (!re.test(html)) {
   console.error("未找到占位注释，请检查 site/index.html 是否包含 PIC_HARVEST_AI_API 脚本行。");
