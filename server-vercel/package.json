@@ -1,0 +1,7 @@
+{
+  "name": "picharvest-ai",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "图仓官网 AI 对话框 · 阿里云百炼代理（Vercel Serverless）"
+}

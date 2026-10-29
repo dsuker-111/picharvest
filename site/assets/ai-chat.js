@@ -3,16 +3,16 @@
 /**
  * 图仓官网 AI 对话框
  * -----------------
- * 通过本机代理 server/cloud_api.py 调用阿里云百炼（DashScope）模型。
- * API Key 只存在于代理进程的环境变量中，浏览器与页面源码都不含密钥。
+ * 后端优先顺序：
+ *   1. window.PIC_HARVEST_AI_API（手动指定，最高优先级）
+ *   2. 同域 /api （Vercel Serverless 代理，公网可用）
+ *   3. http://127.0.0.1:8000 （本机 cloud_api.py 代理）
  *
- * 支持在 <script> 之前设置 window.PIC_HARVEST_AI_API 覆盖代理地址，
- * 默认 http://127.0.0.1:8000。
+ * API Key 只保存在服务端环境变量中，浏览器与页面源码都不含密钥。
  */
 (() => {
-  const API_BASE = (window.PIC_HARVEST_AI_API || "http://127.0.0.1:8000").replace(/\/+$/, "");
-  const CHAT_ENDPOINT = API_BASE + "/chat";
-  const HEALTH_ENDPOINT = API_BASE + "/health";
+  const LOCAL_BASE = "http://127.0.0.1:8000";
+  const SAME_ORIGIN_BASE = ""; // 同域，路径 /api/chat
 
   const CHAT_OPEN_KEY = "picharvest-ai-chat-open";
   const HISTORY_KEY = "picharvest-ai-history";
@@ -29,7 +29,8 @@
   const sendBtn = form.querySelector(".ai-chat-send");
   const statusEl = document.getElementById("aiChatStatus");
 
-  let online = null; // null=未知, true=可用, false=不可用
+  let baseUrl = null; // 探测结果
+  let hint = ""; // 状态附注
   let busy = false;
   let history = loadHistory();
 
@@ -77,33 +78,60 @@
     if (messages.children.length) return;
     addMessage(
       "ai",
-      "你好，我是图仓官网的 AI 助手（阿里云百炼）。\n" +
-        "可以问我：图仓怎么装、支持哪些平台、ZIP 打包失败怎么办。"
+      "你好，我是图仓的 AI 助手。\n" +
+        "可以问我：图仓怎么安装、支持哪些平台、ZIP 打包失败怎么办、图片会不会上传。"
     );
   }
 
-  async function checkHealth() {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 5000);
-      const res = await fetch(HEALTH_ENDPOINT, { signal: controller.signal, cache: "no-store" });
-      clearTimeout(timer);
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = await res.json();
-      online = true;
-      const model = data && data.model ? String(data.model) : "阿里云百炼";
-      const keyOk = !data || data.key_configured !== false;
-      if (!keyOk) {
-        setStatus("代理已连接，但未配置 DASHSCOPE_API_KEY", "off");
-        return false;
+  /** 依次尝试候选后端，返回第一个 /health 可用的 base。 */
+  async function probe() {
+    const explicit = (window.PIC_HARVEST_AI_API || "").replace(/\/+$/, "");
+    const candidates = [];
+    if (explicit) candidates.push(explicit);
+    candidates.push(SAME_ORIGIN_BASE); // 同域 /api
+    candidates.push(LOCAL_BASE);
+
+    for (const base of candidates) {
+      const url = (base || "") + "/api/health";
+      const alt = base === SAME_ORIGIN_BASE ? "" : base + "/health";
+      const targets = base === SAME_ORIGIN_BASE ? [url] : [alt, url];
+
+      for (const target of targets) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 4000);
+          const res = await fetch(target, { signal: controller.signal, cache: "no-store" });
+          clearTimeout(timer);
+          if (!res.ok) continue;
+          const data = await res.json();
+          baseUrl = base;
+          const model = (data && data.model) || "阿里云百炼";
+          const keyOk = !data || data.key_configured !== false;
+
+          if (!keyOk) {
+            setStatus("代理已连接，但服务端未配置 DASHSCOPE_API_KEY", "off");
+            hint = "服务端缺少 DASHSCOPE_API_KEY";
+            return false;
+          }
+          const scope = base === LOCAL_BASE ? "本机代理" : "云端代理";
+          setStatus(scope + " · " + model, "ok");
+          hint = "";
+          return true;
+        } catch (_) {
+          /* 试下一个 */
+        }
       }
-      setStatus("阿里云百炼 · " + model, "ok");
-      return true;
-    } catch (_) {
-      online = false;
-      setStatus("未连接 AI 代理（127.0.0.1:8000）", "off");
-      return false;
     }
+
+    baseUrl = null;
+    hint = "";
+    setStatus("AI 服务未连接", "off");
+    return false;
+  }
+
+  function chatUrl() {
+    if (baseUrl === null) return null;
+    return baseUrl === SAME_ORIGIN_BASE ? "/api/chat" : baseUrl + "/chat";
   }
 
   async function ask(text) {
@@ -113,13 +141,22 @@
     pending.classList.add("ai-msg-pending");
     const bubble = pending.querySelector(".ai-bubble");
 
+    if (baseUrl === null && !(await probe())) {
+      bubble.textContent =
+        "AI 服务暂时不可用。\n" +
+        "请稍后重试；如果是本机部署，请确认已运行 server/cloud_api.py（端口 8000）。";
+      pending.classList.remove("ai-msg-pending");
+      setBusy(false);
+      return;
+    }
+
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 120000);
     let answer = "";
     let failed = false;
 
     try {
-      const res = await fetch(CHAT_ENDPOINT, {
+      const res = await fetch(chatUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: text, history, max_tokens: 700, temperature: 0.6 }),
@@ -136,12 +173,11 @@
       }
     } catch (error) {
       failed = true;
-      answer =
-        online === true
-          ? "调用失败：" + (error && error.message ? error.message : String(error))
-          : "未连接到 AI 代理。\n请在本机运行 server/cloud_api.py（端口 8000）并配置 DASHSCOPE_API_KEY 后重试。";
-      online = false;
-      setStatus("AI 代理未连接", "off");
+      const isLocal = baseUrl === LOCAL_BASE;
+      answer = isLocal
+        ? "未连接到本机 AI 代理。\n请运行 server/cloud_api.py（端口 8000）并配置 DASHSCOPE_API_KEY 后重试。"
+        : "调用 AI 服务失败：" + (error && error.message ? error.message : String(error));
+      setStatus("调用失败", "off");
     } finally {
       clearTimeout(timer);
       bubble.textContent = answer;
@@ -155,7 +191,7 @@
         history = history.slice(-MAX_HISTORY);
         saveHistory();
       }
-      if (failed) checkHealth();
+      if (failed) probe();
     }
   }
 
@@ -164,7 +200,7 @@
     root.setAttribute("aria-hidden", "false");
     toggle.setAttribute("aria-expanded", "true");
     welcome();
-    if (online !== true) checkHealth();
+    if (baseUrl === null) probe();
     input.focus();
   }
 
@@ -226,5 +262,5 @@
     input.style.height = Math.min(input.scrollHeight, 140) + "px";
   }
 
-  setTimeout(checkHealth, 1000);
+  setTimeout(probe, 900);
 })();

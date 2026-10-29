@@ -15,14 +15,20 @@
 - **源码校验**：`site/downloads/SOURCE-SHA256.txt`
 - **许可**：MIT
 
-> **内置 AI 对话（阿里云百炼）**：官网右下角有「AI 助手」浮动按钮，点开即可对话。请求经本机代理 `server/cloud_api.py` 转发到阿里云百炼 DashScope 的 OpenAI 兼容接口，**API Key 只保存在代理进程的环境变量中，不进入前端代码**。
+> **内置 AI 对话（阿里云百炼）**：官网右下角有「AI 助手」浮动按钮，点开即可对话。前端按以下顺序自动探测后端，全部通过阿里云百炼 DashScope 的 OpenAI 兼容接口应答，**API Key 只保存在服务端，不进入前端代码**：
+>
+> 1. `window.PIC_HARVEST_AI_API`（手动指定）
+> 2. 同域 `/api`（`server-vercel/`，公网部署后他人也能用）
+> 3. `http://127.0.0.1:8000`（`server/cloud_api.py`，仅本机）
+>
+> 本机快速体验：
 >
 > ```bash
 > set DASHSCOPE_API_KEY=sk-你的密钥
 > python server/cloud_api.py
 > ```
 >
-> 详细说明见 [server/README.md](server/README.md)。未启动代理时对话框会提示「未连接」，页面其余部分不受影响。
+> 想让**任何访客**都能用，部署 [server-vercel/README.md](server-vercel/README.md)：`cd server-vercel && npx vercel --prod`，再配 `DASHSCOPE_API_KEY` 环境变量。详见 [server/README.md](server/README.md)。
 
 ![图仓界面](site/assets/popup-screenshot.png)
 
@@ -94,9 +100,14 @@ site/
   assets/                样式、脚本、截图、演示图、OG 图、ai-chat.js
   downloads/             安装包、源码 ZIP、SHA-256、version.json
 server/
-  cloud_api.py           阿里云百炼代理（零依赖，持有 API Key）
+  cloud_api.py           阿里云百炼代理（零依赖，持有 API Key，本机用）
   start-ai-proxy.bat     Windows 一键启动
-  README.md              AI 对话框接入说明
+  README.md              本机代理接入说明
+server-vercel/
+  api/chat.js            Vercel Serverless 对话代理（公网可用）
+  api/health.js          健康检查
+  vercel.json            函数配置与 CORS
+  README.md              公网部署步骤（让任何访客都能用）
 tests/
   extractor.test.mjs     7 个提取 / 升级 / 去重测试
   fixtures/product.html  真实结构的 Shopify 商品页 fixture
@@ -124,32 +135,33 @@ scripts/
 
 ## 关于「他人电脑访问网址能否使用这个模型」
 
-**当前不能。** 两种受限方式：
+**改用公网代理后可以。** 三种方式的对比：
 
-| 方式 | 能否让访客用 | 原因 |
+| 方式 | 他人访问能否用 | 原因 |
 | --- | --- | --- |
-| 本机代理 `127.0.0.1:8000`（当前） | ❌ | 访客的 `127.0.0.1` 指向他自己的电脑；且公网 HTTPS 页面请求本机 HTTP 属混合内容，被浏览器拦截 |
+| 本机代理 `127.0.0.1:8000` | ❌ | 访客的 `127.0.0.1` 指向他自己的电脑；且公网 HTTPS 页面请求本机 HTTP 属混合内容，被浏览器拦截 |
 | 把 API Key 写进前端 | ❌（且危险） | Key 会泄露，任何人可盗刷额度 |
+| **`server-vercel/` 公网 Serverless** | ✅ | 公网 HTTPS，全球可访问，Key 留在服务端环境变量 |
 
-**要让任何访客都能用，必须把代理部署到公网**，页面指向那个公网地址：
+本项目已内置第三种方案，开箱即用：
 
+```bash
+cd server-vercel
+npx vercel --prod          # 部署函数，得到 https://xxx.vercel.app
+# 到 Vercel 项目 Settings → Environment Variables 添加 DASHSCOPE_API_KEY
+npx vercel --prod          # 重新部署使环境变量生效
+curl https://xxx.vercel.app/api/health
 ```
-浏览器 → https://你的域名/api/chat → 阿里云百炼
-```
 
-可行方案（任选其一）：
-
-1. **阿里云函数计算 FC**：把 `cloud_api.py` 的逻辑改成函数入口，配置 `DASHSCOPE_API_KEY` 环境变量，得到 HTTPS 地址。
-2. **阿里云 ECS + Nginx**：在服务器上跑 `cloud_api.py`，Nginx 反代并签发 HTTPS 证书。
-3. **Serverless（Vercel / Netlify Functions）**：写一个 `/api/chat` 函数，Key 放平台环境变量。
-
-部署后改一行即可切换：
+前端会自动优先使用同域 `/api`，其次 `127.0.0.1:8000`。若官网与函数不同域，在 `index.html` 里指定一次：
 
 ```html
-<script>window.PIC_HARVEST_AI_API = "https://你的域名";</script>
+<script>window.PIC_HARVEST_AI_API = "https://xxx.vercel.app";</script>
 ```
 
-> 提示：公开给全网使用会产生阿里云百炼调用费用，建议加访问频率限制或简单鉴权。
+完整步骤见 [server-vercel/README.md](server-vercel/README.md)。
+
+> ⚠️ 公开给全网使用会持续产生阿里云百炼调用费用，建议加 Rate Limit、简单口令或设置用量上限。
 
 ## 发布
 
