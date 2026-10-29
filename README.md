@@ -37,6 +37,14 @@
 >
 > 也可双击 `scripts/start-ai-public.bat`（云端 + 公网）或 `scripts/start-local-model.bat`（本地模型）。
 >
+> **一键启动（推荐）**：运行一次
+>
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File scripts\create-shortcut.ps1
+> ```
+>
+> 桌面会生成「图仓AI」图标，以后双击即可：后台启动代理 → 自动打开官网。网页里点「本地 · LoRA」会再自动拉起本地模型。删除快捷方式加 `-Remove` 参数。
+>
 > 想让**任何访客**都能用，部署 [server-vercel/README.md](server-vercel/README.md)。详见 [server/README.md](server/README.md)。
 
 ![图仓界面](site/assets/popup-screenshot.png)
