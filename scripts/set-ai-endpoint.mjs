@@ -16,7 +16,7 @@ const start = "<!-- AI 代理地址：由 scripts/set-ai-endpoint.mjs 写入 -->
 const re = /[ \t]*(?:<!--[^\n]*AI 代理地址[^\n]*-->\r?\n[ \t]*)?<script>window\.PIC_HARVEST_AI_API = "[^"]*";<\/script>\r?\n/;
 
 if (!re.test(html)) {
-  console.error("未找到占位注释，请检查 site/index.html 是否包含 PIC_HARVEST_AI_API 脚本行。");
+  console.error("未找到占位块，请检查 site/index.html 是否包含 PIC_HARVEST_AI_API 脚本行。");
   process.exit(1);
 }
 
@@ -26,7 +26,7 @@ if (!url) {
 } else {
   html = html.replace(
     re,
-    `${start}\n  <script>window.PIC_HARVEST_AI_API = "${url}";</script>\n`
+    `  ${marker}\n  <script>window.PIC_HARVEST_AI_API = "${url}";</script>\n`
   );
   console.log("已写入 AI 代理地址：" + url);
 }

@@ -28,9 +28,25 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
+# 从 .env.local 读取配置（已 gitignore，不会提交）
+$envFile = Join-Path $root ".env.local"
+if (Test-Path $envFile) {
+  Get-Content $envFile | ForEach-Object {
+    $line = $_.Trim()
+    if (-not $line -or $line.StartsWith("#")) { return }
+    $idx = $line.IndexOf("=")
+    if ($idx -lt 1) { return }
+    $k = $line.Substring(0, $idx).Trim()
+    $v = $line.Substring($idx + 1).Trim()
+    if ($k -and -not [Environment]::GetEnvironmentVariable($k, "Process")) {
+      [Environment]::SetEnvironmentVariable($k, $v, "Process")
+    }
+  }
+}
+
 if (-not $env:DASHSCOPE_API_KEY) {
   Write-Host "缺少 DASHSCOPE_API_KEY。" -ForegroundColor Red
-  Write-Host "请先执行：`$env:DASHSCOPE_API_KEY='sk-你的百炼Key'" -ForegroundColor Yellow
+  Write-Host "请在 .env.local 里写入 DASHSCOPE_API_KEY=sk-... 后重试。" -ForegroundColor Yellow
   exit 1
 }
 
