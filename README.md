@@ -135,25 +135,46 @@ scripts/
 
 ## 关于「他人电脑访问网址能否使用这个模型」
 
-**改用公网代理后可以。** 三种方式的对比：
+**可以，当前线上站已可用。** 官网已指向一个公网 HTTPS 代理，任何电脑打开 `https://picharvest-2026.surge.sh` 点「AI 助手」即可对话，不依赖访客本机环境。
 
-| 方式 | 他人访问能否用 | 原因 |
+| 方式 | 他人访问能否用 | 说明 |
 | --- | --- | --- |
-| 本机代理 `127.0.0.1:8000` | ❌ | 访客的 `127.0.0.1` 指向他自己的电脑；且公网 HTTPS 页面请求本机 HTTP 属混合内容，被浏览器拦截 |
-| 把 API Key 写进前端 | ❌（且危险） | Key 会泄露，任何人可盗刷额度 |
-| **`server-vercel/` 公网 Serverless** | ✅ | 公网 HTTPS，全球可访问，Key 留在服务端环境变量 |
+| 本机代理 `127.0.0.1:8000` | ❌ | 访客的 `127.0.0.1` 是他自己的电脑；且公网 HTTPS 请求本机 HTTP 属混合内容，会被拦截 |
+| 把 API Key 写进前端 | ❌（且危险） | Key 泄露，任何人可盗刷额度 |
+| **公网隧道（当前采用）** | ✅ | `cloudflared` 把本机代理映射成公网 HTTPS，免费、无需账号；**但依赖本机开机且进程运行，重启后域名会变** |
+| **`server-vercel/` Serverless（推荐长期用）** | ✅ | 部署到 Vercel/阿里云函数，不依赖本机，域名固定 |
 
-本项目已内置第三种方案，开箱即用：
+### 当前部署方式（临时）
+
+```powershell
+# 1) 启动代理（持有 API Key）
+$env:DASHSCOPE_API_KEY="sk-..."
+$env:MODEL_NAME="deepseek-v4.1-flash"
+python server/cloud_api.py
+
+# 2) 另开窗口映射到公网
+.\cloudflared.exe tunnel --url http://127.0.0.1:8000 --no-autoupdate
+
+# 3) 把得到的 https://xxx.trycloudflare.com 写进站点
+node scripts/set-ai-endpoint.mjs https://xxx.trycloudflare.com
+npx surge site picharvest-2026.surge.sh
+```
+
+> ⚠️ 隧道域名每次重启都会变，端口或进程停止后对话立即失效，需要重新执行第 2、3 步。
+
+### 长期方案（不依赖本机）
 
 ```bash
 cd server-vercel
-npx vercel --prod          # 部署函数，得到 https://xxx.vercel.app
-# 到 Vercel 项目 Settings → Environment Variables 添加 DASHSCOPE_API_KEY
-npx vercel --prod          # 重新部署使环境变量生效
-curl https://xxx.vercel.app/api/health
+npx vercel --prod            # 得到 https://xxx.vercel.app
+# Vercel 项目 Settings → Environment Variables 添加 DASHSCOPE_API_KEY
+npx vercel --prod            # 重新部署生效
+node scripts/set-ai-endpoint.mjs https://xxx.vercel.app
 ```
 
-前端会自动优先使用同域 `/api`，其次 `127.0.0.1:8000`。若官网与函数不同域，在 `index.html` 里指定一次：
+也可以直接跑 `node scripts/deploy-ai.mjs`（需 `VERCEL_TOKEN` 与 `DASHSCOPE_API_KEY`）。
+
+前端会自动优先使用 `window.PIC_HARVEST_AI_API`，其次同域 `/api`，最后 `127.0.0.1:8000`：
 
 ```html
 <script>window.PIC_HARVEST_AI_API = "https://xxx.vercel.app";</script>
