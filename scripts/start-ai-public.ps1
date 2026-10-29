@@ -19,7 +19,7 @@
 [CmdletBinding()]
 param(
   [string]$Model = "deepseek-v4.1-flash",
-  [int]$Port = 8000,
+  [int]$Port = 8123,
   [switch]$Deploy,
   [string]$CloudflaredPath = ""
 )
@@ -53,7 +53,28 @@ if (-not $CloudflaredPath) {
 $python = (Get-Command python -ErrorAction SilentlyContinue).Source
 if (-not $python) { $python = "python" }
 
-Write-Host "[1/3] 启动代理 :$Port ..." -ForegroundColor Cyan
+Write-Host "[1/3] 选择端口并启动代理 ..." -ForegroundColor Cyan
+
+# 8000 常被其他进程（如 mock 服务）占用，这里自动找一个空闲端口。
+function Test-PortFree([int]$p) {
+  $busy = Get-NetTCPConnection -LocalPort $p -State Listen -ErrorAction SilentlyContinue
+  return -not $busy
+}
+
+$startPort = $Port
+$chosen = $null
+for ($p = $startPort; $p -lt $startPort + 20; $p++) {
+  if (Test-PortFree $p) { $chosen = $p; break }
+}
+if (-not $chosen) {
+  Write-Host "      $startPort ~ $($startPort + 19) 全部被占用。" -ForegroundColor Red
+  exit 1
+}
+if ($chosen -ne $startPort) {
+  Write-Host "      端口 $startPort 已被占用，改用 $chosen" -ForegroundColor Yellow
+}
+$Port = $chosen
+
 $env:MODEL_NAME = $Model
 $env:PORT = "$Port"
 $proxy = Start-Process -FilePath $python `
@@ -63,11 +84,18 @@ $proxy = Start-Process -FilePath $python `
 Start-Sleep -Seconds 3
 try {
   $h = Invoke-RestMethod "http://127.0.0.1:$Port/health" -TimeoutSec 10
-  Write-Host "      代理就绪，模型 $($h.model)" -ForegroundColor Green
 } catch {
   Write-Host "      代理启动失败：$($_.Exception.Message)" -ForegroundColor Red
   exit 1
 }
+
+# 关键校验：确认应答的是阿里云代理，而不是别的 mock 服务
+if ($h.provider -ne "aliyun-dashscope") {
+  Write-Host "      端口 $Port 上运行的不是阿里云代理（provider=$($h.provider)）。" -ForegroundColor Red
+  Write-Host "      可能是其他进程占用了端口，请重试或换一个端口。" -ForegroundColor Yellow
+  exit 1
+}
+Write-Host "      代理就绪 :$Port，模型 $($h.model)，Key $($(if ($h.key_configured) { '已配置' } else { '缺失' }))" -ForegroundColor Green
 
 Write-Host "[2/3] 建立公网隧道 ..." -ForegroundColor Cyan
 $logFile = Join-Path $env:TEMP "cloudflared-ph.log"
