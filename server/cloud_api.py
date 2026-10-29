@@ -33,6 +33,40 @@ import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+
+def _load_env_files():
+    """自动读取项目根目录 / server 目录下的 .env.local、.env。
+
+    这样无论从哪里、用什么方式启动代理，都能拿到 DASHSCOPE_API_KEY，
+    避免出现「代理已连接，但服务端未配置 DASHSCOPE_API_KEY」。
+    已存在的环境变量优先级更高，不会被覆盖。
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = []
+    for base in (here, os.path.dirname(here)):
+        for name in (".env.local", ".env"):
+            candidates.append(os.path.join(base, name))
+
+    for path in candidates:
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8-sig") as fh:
+                for raw in fh:
+                    line = raw.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    key = key.strip()
+                    value = value.strip().strip('"').strip("'")
+                    if key and key not in os.environ:
+                        os.environ[key] = value
+        except Exception as exc:  # noqa: BLE001
+            print("[cloud_api] 读取 %s 失败：%s" % (path, exc), flush=True)
+
+
+_load_env_files()
+
 API_KEY = os.environ.get("DASHSCOPE_API_KEY", "").strip()
 BASE_URL = os.environ.get(
     "DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
@@ -397,10 +431,17 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     print("=" * 62)
-    print("  个人网页 AI 代理（阿里云百炼 · 零依赖）")
+    print("  图仓 AI 代理（阿里云百炼 · 零依赖）")
     print("  地址     : http://127.0.0.1:%d" % PORT)
     print("  模型     : %s" % MODEL_NAME)
     print("  接口     : %s" % BASE_URL)
-    print("  API Key  : %s" % ("已配置" if API_KEY else "❌ 未配置 DASHSCOPE_API_KEY"))
-    print("=" * 62)
+    print("  本地模型 : %s（%s）" % (LOCAL_MODEL_URL, "自动启动" if AUTO_START_LOCAL else "手动启动"))
+    if API_KEY:
+        print("  API Key  : 已配置（%s…）" % API_KEY[:7])
+    else:
+        print("  API Key  : [!] 未配置")
+        print("             请在项目根目录 .env.local 写入：")
+        print("             DASHSCOPE_API_KEY=sk-...")
+        print("             保存后重启本服务。")
+    print("=" * 62, flush=True)
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

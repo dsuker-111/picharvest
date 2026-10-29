@@ -62,27 +62,50 @@ loaded = False
 load_error = ""
 
 
+def _load_causal(path):
+    """加载因果语言模型。
+
+    优先用 device_map="auto"（需要 accelerate）；若 accelerate 缺失或版本不兼容，
+    自动回退到"整模型搬到单设备"，避免整个本地模型直接不可用。
+    """
+    import torch
+    from transformers import AutoTokenizer, AutoModelForCausalLM
+
+    tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=True)
+
+    try:
+        model = AutoModelForCausalLM.from_pretrained(
+            path, torch_dtype="auto", device_map="auto", trust_remote_code=True
+        )
+        return tokenizer, model
+    except Exception as exc:  # noqa: BLE001
+        print("[local] device_map 加载失败（%s），回退单设备模式" % type(exc).__name__, flush=True)
+
+    model = AutoModelForCausalLM.from_pretrained(
+        path, torch_dtype="auto", trust_remote_code=True
+    )
+    try:
+        if torch.cuda.is_available():
+            model = model.to("cuda")
+        else:
+            model = model.to("cpu")
+    except Exception as exc:  # noqa: BLE001
+        print("[local] 迁移设备失败，保持默认：%s" % exc, flush=True)
+    return tokenizer, model
+
+
 def load_model():
     """加载模型：优先用合并后的目录，否则回退到 base + LoRA 适配器。"""
     global tokenizer, model, loaded, load_error
     try:
-        import torch
-        from transformers import AutoTokenizer, AutoModelForCausalLM
-
         if os.path.isdir(MODEL_DIR):
             print("[local] 加载合并模型: %s" % MODEL_DIR, flush=True)
-            tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR, trust_remote_code=True)
-            model = AutoModelForCausalLM.from_pretrained(
-                MODEL_DIR, torch_dtype="auto", device_map="auto", trust_remote_code=True
-            )
+            tokenizer, model = _load_causal(MODEL_DIR)
         else:
             print("[local] 未找到合并目录，回退 base + adapter", flush=True)
             from peft import PeftModel
 
-            tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
-            model = AutoModelForCausalLM.from_pretrained(
-                BASE_MODEL, torch_dtype="auto", device_map="auto", trust_remote_code=True
-            )
+            tokenizer, model = _load_causal(BASE_MODEL)
             model = PeftModel.from_pretrained(model, ADAPTER_DIR).merge_and_unload()
 
         model.eval()
