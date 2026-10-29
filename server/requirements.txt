@@ -1,0 +1,6 @@
+# 图仓官网 AI 对话框 · 阿里云百炼代理
+#
+# cloud_api.py 只使用 Python 标准库，无需安装任何第三方依赖。
+# 直接运行：python server/cloud_api.py
+#
+# （如需改用本地 TRAE 训练模型方案，才需要 torch / transformers / peft / accelerate）

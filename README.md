@@ -15,6 +15,15 @@
 - **源码校验**：`site/downloads/SOURCE-SHA256.txt`
 - **许可**：MIT
 
+> **内置 AI 对话（阿里云百炼）**：官网右下角有「AI 助手」浮动按钮，点开即可对话。请求经本机代理 `server/cloud_api.py` 转发到阿里云百炼 DashScope 的 OpenAI 兼容接口，**API Key 只保存在代理进程的环境变量中，不进入前端代码**。
+>
+> ```bash
+> set DASHSCOPE_API_KEY=sk-你的密钥
+> python server/cloud_api.py
+> ```
+>
+> 详细说明见 [server/README.md](server/README.md)。未启动代理时对话框会提示「未连接」，页面其余部分不受影响。
+
 ![图仓界面](site/assets/popup-screenshot.png)
 
 ## 使用截图
@@ -79,11 +88,15 @@ extension/
   lib/jszip.min.js       本地依赖，无 CDN
   icons/                 PNG 图标
 site/
-  index.html             产品介绍页（含真实使用截图）
+  index.html             产品介绍页（含真实使用截图 + AI 对话框）
   privacy.html           隐私说明
   404.html               404
-  assets/                样式、脚本、截图、演示图、OG 图、usage-*.png
+  assets/                样式、脚本、截图、演示图、OG 图、ai-chat.js
   downloads/             安装包、源码 ZIP、SHA-256、version.json
+server/
+  cloud_api.py           阿里云百炼代理（零依赖，持有 API Key）
+  start-ai-proxy.bat     Windows 一键启动
+  README.md              AI 对话框接入说明
 tests/
   extractor.test.mjs     7 个提取 / 升级 / 去重测试
   fixtures/product.html  真实结构的 Shopify 商品页 fixture
@@ -107,6 +120,36 @@ scripts/
 - `npm run test:e2e`：在 Chromium 156 中加载扩展，扫描 fixture 商品页得到 9 张图；ZIP 生成 790,338 字节、9 个 JPEG 条目；逐张下载创建 9 个任务；`chrome://newtab` 受保护页面正确显示错误态。
 - `npm run preview`：1440 / 1180 / 1024 / 900 / 768 / 430 / 390 / 320 宽度无横向溢出，站点无 console / page error。
 - **在线站点验证**：HTTP 200，全部图片加载，0 张 broken；安装包链接返回 200，哈希一致。
+- **AI 对话框验证**：mock 上游下 `/health` 与 `/chat` 转发正常（含 `Authorization` 与多轮 `history`）；Chromium 实测打开弹窗、发送、收到回复、无 JS 错误；1440/1024/768/430/390/320 六档宽度弹窗均在视口内且无横向滚动。
+
+## 关于「他人电脑访问网址能否使用这个模型」
+
+**当前不能。** 两种受限方式：
+
+| 方式 | 能否让访客用 | 原因 |
+| --- | --- | --- |
+| 本机代理 `127.0.0.1:8000`（当前） | ❌ | 访客的 `127.0.0.1` 指向他自己的电脑；且公网 HTTPS 页面请求本机 HTTP 属混合内容，被浏览器拦截 |
+| 把 API Key 写进前端 | ❌（且危险） | Key 会泄露，任何人可盗刷额度 |
+
+**要让任何访客都能用，必须把代理部署到公网**，页面指向那个公网地址：
+
+```
+浏览器 → https://你的域名/api/chat → 阿里云百炼
+```
+
+可行方案（任选其一）：
+
+1. **阿里云函数计算 FC**：把 `cloud_api.py` 的逻辑改成函数入口，配置 `DASHSCOPE_API_KEY` 环境变量，得到 HTTPS 地址。
+2. **阿里云 ECS + Nginx**：在服务器上跑 `cloud_api.py`，Nginx 反代并签发 HTTPS 证书。
+3. **Serverless（Vercel / Netlify Functions）**：写一个 `/api/chat` 函数，Key 放平台环境变量。
+
+部署后改一行即可切换：
+
+```html
+<script>window.PIC_HARVEST_AI_API = "https://你的域名";</script>
+```
+
+> 提示：公开给全网使用会产生阿里云百炼调用费用，建议加访问频率限制或简单鉴权。
 
 ## 发布
 

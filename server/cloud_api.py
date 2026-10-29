@@ -1,0 +1,192 @@
+"""
+阿里云百炼（DashScope）代理服务 cloud_api.py
+==========================================
+
+把前端 AI 对话框的请求转发到阿里云的 OpenAI 兼容接口，
+**API Key 只保存在服务端环境变量里，不会进入前端代码或仓库。**
+
+默认模型：deepseek-v4.1-flash
+默认接口：https://dashscope.aliyuncs.com/compatible-mode/v1
+
+【零依赖】只使用 Python 标准库，无需 pip install。
+
+用法：
+    # 1) 设置阿里云百炼 API Key（在百炼控制台创建）
+    Windows:  set DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxxxxx
+    macOS/Linux: export DASHSCOPE_API_KEY=sk-xxxxxxxxxxxxxxxx
+
+    # 2) 启动
+    python server/cloud_api.py
+
+可选环境变量：
+    DASHSCOPE_BASE_URL  接口地址，默认 https://dashscope.aliyuncs.com/compatible-mode/v1
+    MODEL_NAME          模型名，默认 deepseek-v4.1-flash
+    PORT                监听端口，默认 8000
+"""
+
+import json
+import os
+import urllib.error
+import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+API_KEY = os.environ.get("DASHSCOPE_API_KEY", "").strip()
+BASE_URL = os.environ.get(
+    "DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
+).rstrip("/")
+MODEL_NAME = os.environ.get("MODEL_NAME", "deepseek-v4.1-flash")
+PORT = int(os.environ.get("PORT", "8000"))
+
+SYSTEM_PROMPT = (
+    "你是个人网页里的 AI 助手，风格简洁、直接、友好。"
+    "回答用中文，尽量条理清晰；不确定的内容要说明不确定。"
+)
+
+
+def build_messages(prompt, history):
+    """把前端传的 prompt + history 转成 OpenAI 格式 messages。"""
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for item in history or []:
+        role = item.get("role")
+        content = (item.get("content") or "").strip()
+        if not content:
+            continue
+        # 前端用 ai 表示助手，OpenAI 兼容接口用 assistant
+        if role == "ai":
+            role = "assistant"
+        if role not in ("user", "assistant"):
+            continue
+        messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": prompt})
+    return messages
+
+
+def call_dashscope(messages, max_tokens=512, temperature=0.7):
+    """调用阿里云 OpenAI 兼容 chat/completions。"""
+    if not API_KEY:
+        raise RuntimeError(
+            "未配置 DASHSCOPE_API_KEY。请先设置环境变量后重启本服务。"
+        )
+
+    payload = {
+        "model": MODEL_NAME,
+        "messages": messages,
+        "max_tokens": int(max_tokens),
+        "temperature": float(temperature),
+        "stream": False,
+    }
+    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        BASE_URL + "/chat/completions",
+        data=data,
+        method="POST",
+        headers={
+            "Authorization": "Bearer " + API_KEY,
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "ignore")[:600]
+        raise RuntimeError("阿里云接口 HTTP %s：%s" % (exc.code, detail))
+    except urllib.error.URLError as exc:
+        raise RuntimeError("无法连接阿里云接口：%s" % exc.reason)
+    except TimeoutError:
+        raise RuntimeError("调用阿里云接口超时，请稍后重试。")
+
+    choices = body.get("choices") or []
+    if not choices:
+        raise RuntimeError(
+            "阿里云返回内容为空：%s" % json.dumps(body, ensure_ascii=False)[:400]
+        )
+    message = choices[0].get("message") or {}
+    return (message.get("content") or "").strip()
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = "PersonalSiteAIProxy/1.0"
+
+    def _send_json(self, status, payload):
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        # 允许静态站点（含 GitHub Pages 域名）跨域调用本机代理
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        # Chrome 私有网络访问（Public → localhost）要求显式放行，
+        # 否则 GitHub Pages 等公网 HTTPS 页面无法请求本机 127.0.0.1
+        self.send_header("Access-Control-Allow-Private-Network", "true")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Access-Control-Request-Private-Network")
+        self.send_header("Access-Control-Max-Age", "600")
+        # 关键：允许公网页面访问本机（Private Network Access 预检）
+        self.send_header("Access-Control-Allow-Private-Network", "true")
+        self.end_headers()
+
+    def do_GET(self):
+        if self.path.split("?")[0] == "/health":
+            self._send_json(200, {
+                "status": "ok",
+                "provider": "aliyun-dashscope",
+                "model": MODEL_NAME,
+                "base_url": BASE_URL,
+                "key_configured": bool(API_KEY),
+            })
+        else:
+            self._send_json(404, {"error": "not found"})
+
+    def do_POST(self):
+        if self.path.split("?")[0] != "/chat":
+            self._send_json(404, {"error": "not found"})
+            return
+
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(length) if length else b"{}"
+            body = json.loads(raw.decode("utf-8") or "{}")
+        except Exception as exc:
+            self._send_json(400, {"answer": "", "error": "请求体解析失败：%s" % exc})
+            return
+
+        prompt = (body.get("prompt") or "").strip()
+        if not prompt:
+            self._send_json(200, {"answer": "", "model": MODEL_NAME})
+            return
+
+        messages = build_messages(prompt, body.get("history"))
+        max_tokens = body.get("max_tokens") or body.get("max_new_tokens") or 512
+        temperature = body.get("temperature", 0.7)
+
+        try:
+            answer = call_dashscope(messages, max_tokens, temperature)
+            self._send_json(200, {"answer": answer, "model": MODEL_NAME})
+        except RuntimeError as exc:
+            # 返回 200 + 错误说明，前端可直接展示
+            self._send_json(200, {"answer": "", "error": str(exc), "model": MODEL_NAME})
+        except Exception as exc:  # 兜底
+            self._send_json(200, {"answer": "", "error": "代理异常：%s" % exc})
+
+    def log_message(self, fmt, *args):
+        print("[cloud_api] " + (fmt % args))
+
+
+if __name__ == "__main__":
+    print("=" * 62)
+    print("  个人网页 AI 代理（阿里云百炼 · 零依赖）")
+    print("  地址     : http://127.0.0.1:%d" % PORT)
+    print("  模型     : %s" % MODEL_NAME)
+    print("  接口     : %s" % BASE_URL)
+    print("  API Key  : %s" % ("已配置" if API_KEY else "❌ 未配置 DASHSCOPE_API_KEY"))
+    print("=" * 62)
+    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

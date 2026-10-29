@@ -1,7 +1,10 @@
 node_modules/
 .tmp/
 .tmp-profile/
+.tmp-surge/
 .vercel/
 *.log
 .DS_Store
 Thumbs.db
+__pycache__/
+*.pyc

@@ -437,6 +437,41 @@
     </div>
   </footer>
 
+  <!-- AI 聊天对话框：经本机代理调用阿里云百炼 DashScope 模型 (http://127.0.0.1:8000) -->
+  <button class="ai-chat-fab" id="aiChatToggle" type="button" aria-label="打开 AI 对话" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3v.01M12 3a9 9 0 0 1 9 9M12 3A9 9 0 0 0 3 12m9-8.99v.01M3 12h.01M3 12a9 9 0 0 0 9 9m-9-9h.01m9 9A9 9 0 0 0 21 12m-9 9v.01M21 12h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="2 4" fill="none"/><path d="M12 8l1.5 4.5L18 14l-4.5 1.5L12 20l-1.5-4.5L6 14l4.5-1.5L12 8Z" fill="currentColor"/></svg>
+    <span>AI 助手</span>
+  </button>
+
+  <div class="ai-chat" id="aiChat" aria-hidden="true">
+    <div class="ai-chat-backdrop"></div>
+    <div class="ai-chat-dialog" role="dialog" aria-modal="true" aria-labelledby="aiChatTitle">
+      <header class="ai-chat-head">
+        <div class="ai-chat-title">
+          <strong id="aiChatTitle">问问图仓 AI 助手</strong>
+          <span id="aiChatStatus">阿里云百炼 · 连接中…</span>
+        </div>
+        <button class="ai-chat-close" id="aiChatClose" type="button" aria-label="关闭对话">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+
+      <div class="ai-chat-messages" id="aiChatMessages" aria-live="polite"></div>
+
+      <form class="ai-chat-form" id="aiChatForm" novalidate>
+        <textarea id="aiChatInput" rows="1" placeholder="输入你的问题…（Enter 发送，Shift+Enter 换行）"></textarea>
+        <button class="ai-chat-send" type="submit" disabled aria-label="发送">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 8 14 2l-5 12-2-5-5-1Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M14 2 7 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </form>
+
+      <p class="ai-chat-note">
+        API Key 仅保存在本机代理进程中，不进入前端代码。运行 <code>python server/cloud_api.py</code> 并配置 <code>DASHSCOPE_API_KEY</code> 后即可对话。
+      </p>
+    </div>
+  </div>
+
   <script src="assets/site.js"></script>
+  <script src="assets/ai-chat.js"></script>
 </body>
 </html>
