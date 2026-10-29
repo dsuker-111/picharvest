@@ -26,6 +26,9 @@
 
 import json
 import os
+import subprocess
+import sys
+import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -43,6 +46,14 @@ LOCAL_MODEL_URL = os.environ.get("LOCAL_MODEL_URL", "http://127.0.0.1:8100").rst
 LOCAL_MODEL_NAME = os.environ.get("LOCAL_MODEL_NAME", "Qwen2.5-0.5B + LoRA（本地）")
 # 默认走云端；前端可在请求里用 provider 覆盖
 DEFAULT_PROVIDER = os.environ.get("DEFAULT_PROVIDER", "cloud").lower()
+
+# 点开「本地模型」时自动拉起 server/local_model.py
+AUTO_START_LOCAL = os.environ.get("AUTO_START_LOCAL", "1") not in ("0", "false", "False", "")
+HERE = os.path.dirname(os.path.abspath(__file__))
+LOCAL_MODEL_SCRIPT = os.environ.get(
+    "LOCAL_MODEL_SCRIPT", os.path.join(HERE, "local_model.py")
+)
+_local_proc = None  # 记录由本进程拉起的本地模型
 
 SYSTEM_PROMPT = (
     "你是「图仓 PicHarvest」官网的 AI 助手，服务对象是电商运营、设计师和选品人员。\n\n"
@@ -136,16 +147,80 @@ def call_dashscope(messages, max_tokens=512, temperature=0.7):
     return (message.get("content") or "").strip()
 
 
-def probe_local(timeout=2):
-    """探测本地模型服务是否在线。"""
+def local_status(timeout=2):
+    """返回本地模型 /health 的 JSON；不可达返回 None。"""
     if not LOCAL_MODEL_URL:
-        return False
+        return None
     try:
         req = urllib.request.Request(LOCAL_MODEL_URL + "/health", method="GET")
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status == 200
+            if resp.status != 200:
+                return None
+            try:
+                return json.loads(resp.read().decode("utf-8"))
+            except Exception:
+                return {"loaded": True}
     except Exception:
+        return None
+
+
+def probe_local(timeout=2):
+    """服务是否可达（不代表模型已加载完）。"""
+    return local_status(timeout) is not None
+
+
+def local_ready(timeout=2):
+    """服务可达且模型已加载完成。"""
+    st = local_status(timeout)
+    return bool(st) and st.get("loaded", True) is not False
+
+
+def ensure_local_started():
+    """本地模型没起来就自动拉起。返回 True 表示本次触发了启动。"""
+    global _local_proc
+
+    if probe_local():
         return False
+    if not AUTO_START_LOCAL:
+        return False
+    if not os.path.isfile(LOCAL_MODEL_SCRIPT):
+        print("[cloud_api] 找不到本地模型脚本：%s" % LOCAL_MODEL_SCRIPT, flush=True)
+        return False
+    if _local_proc is not None and _local_proc.poll() is None:
+        return True  # 已在启动中
+
+    try:
+        creationflags = 0
+        if os.name == "nt":
+            # 不弹控制台窗口，且不随父进程退出而结束
+            creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(
+                subprocess, "CREATE_NEW_PROCESS_GROUP", 0
+            )
+        env = dict(os.environ)
+        env.setdefault("LOCAL_PORT", LOCAL_MODEL_URL.rsplit(":", 1)[-1] or "8100")
+        _local_proc = subprocess.Popen(
+            [sys.executable, LOCAL_MODEL_SCRIPT],
+            cwd=HERE,
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=creationflags,
+        )
+        print("[cloud_api] 已拉起本地模型 PID=%s" % _local_proc.pid, flush=True)
+        return True
+    except Exception as exc:  # noqa: BLE001
+        print("[cloud_api] 启动本地模型失败：%s" % exc, flush=True)
+        return False
+
+
+def wait_local(timeout=90):
+    """等待本地模型加载完成。"""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if local_ready(timeout=2):
+            return True
+        time.sleep(2)
+    return False
 
 
 def call_local(prompt, history=None, max_tokens=512, temperature=0.0):
@@ -220,8 +295,9 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        if self.path.split("?")[0] == "/health":
-            local_ok = probe_local()
+        path = self.path.split("?")[0]
+        if path == "/health":
+            st = local_status()
             self._send_json(200, {
                 "status": "ok",
                 "provider": "aliyun-dashscope",
@@ -231,8 +307,13 @@ class Handler(BaseHTTPRequestHandler):
                 # 双后端可用性，前端据此启用 / 禁用「本地模型」按钮
                 "providers": {
                     "cloud": bool(API_KEY),
-                    "local": local_ok,
+                    # 允许自动拉起时也视为「可切换」，点击后由 /local/warm 启动
+                    "local": bool(st) or AUTO_START_LOCAL,
                 },
+                "local_running": bool(st),
+                "local_loaded": bool(st) and st.get("loaded", True) is not False,
+                "local_model": (st or {}).get("model") or LOCAL_MODEL_NAME,
+                "auto_start": AUTO_START_LOCAL,
                 "default_provider": DEFAULT_PROVIDER,
                 "local_url": LOCAL_MODEL_URL,
             })
@@ -240,7 +321,21 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(404, {"error": "not found"})
 
     def do_POST(self):
-        if self.path.split("?")[0] != "/chat":
+        path = self.path.split("?")[0]
+
+        # 预热：前端点「本地模型」时先调这里，避免首个提问等太久
+        if path == "/local/warm":
+            started = ensure_local_started()
+            self._send_json(200, {
+                "ok": True,
+                "starting": started,
+                "running": probe_local(),
+                "ready": local_ready(),
+                "auto_start": AUTO_START_LOCAL,
+            })
+            return
+
+        if path != "/chat":
             self._send_json(404, {"error": "not found"})
             return
 
@@ -264,6 +359,15 @@ class Handler(BaseHTTPRequestHandler):
         # ---- 本地部署模型 ----
         if provider == "local":
             try:
+                # 没起来就自动拉起，并等到模型加载完成（首次通常 10~40 秒）
+                if not local_ready():
+                    started = ensure_local_started()
+                    if not wait_local(90):
+                        hint = "已尝试自动启动，但 90 秒内未就绪。" if started else ""
+                        raise RuntimeError(
+                            "本地模型未运行。%s请手动运行：python server/local_model.py"
+                            % hint
+                        )
                 answer = call_local(prompt, history=body.get("history"),
                                     max_tokens=max_tokens, temperature=temperature)
                 self._send_json(200, {"answer": answer, "model": LOCAL_MODEL_NAME, "provider": "local"})

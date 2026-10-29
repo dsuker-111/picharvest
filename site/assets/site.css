@@ -1664,6 +1664,14 @@ h1, h2, h3, p { margin-top: 0; }
 .ai-chat-fab:hover { transform: translateY(-2px); background: #2e271e; }
 .ai-chat-fab:active { transform: translateY(0); }
 .ai-chat-fab[aria-expanded="true"] svg { transform: rotate(30deg); }
+
+/* 对话框打开时收起悬浮球，否则它会压住输入框和发送按钮 */
+body.ai-chat-open .ai-chat-fab {
+  opacity: 0;
+  transform: translateY(10px) scale(.85);
+  pointer-events: none;
+}
+.ai-chat-fab { transition: transform .18s, background .2s, opacity .18s; }
 @media (prefers-reduced-motion: reduce) {
   .ai-chat-fab svg { transition: none; }
 }

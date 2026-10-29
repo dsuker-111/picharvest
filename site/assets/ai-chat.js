@@ -42,6 +42,11 @@
   let history = loadHistory();
   let provider = loadProvider(); // "cloud" | "local"
   let availability = { cloud: false, local: false };
+  let localLoaded = false; // 本地模型是否已加载完成
+  let localModelName = "LoRA";
+  let warming = false;
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   function loadProvider() {
     try {
@@ -102,10 +107,11 @@
 
       if (p === "local") {
         const ok = availability.local;
-        btn.disabled = !ok;
+        btn.disabled = !ok || warming;
         btn.title = ok
-          ? "使用本机部署的 Qwen2.5 + LoRA 模型"
+          ? "使用本机部署的 Qwen2.5 + LoRA 模型（首次点击会自动启动）"
           : "本地模型未启动：请运行 python server/local_model.py";
+        btn.textContent = warming ? "本地 · 启动中…" : "本地 · LoRA";
       } else {
         btn.disabled = false;
         btn.title = "使用阿里云百炼（deepseek-v4.1-flash）";
@@ -161,6 +167,8 @@
             cloud: p.cloud !== false && keyOk,
             local: p.local === true
           };
+          localLoaded = !!(data && data.local_loaded);
+          if (data && data.local_model) localModelName = data.local_model;
           syncProviderUI();
 
           if (!keyOk) {
@@ -181,7 +189,11 @@
 
           const scope = isLocalBase(base) ? "本机代理" : "云端代理";
           if (provider === "local") {
-            setStatus("本地模型 · " + (data.local_model || "LoRA"), "ok");
+            if (localLoaded) {
+              setStatus("本地模型 · " + localModelName, "ok");
+            } else {
+              setStatus("本地模型加载中…", "idle");
+            }
           } else {
             setStatus(scope + " · " + model, "ok");
           }
@@ -202,6 +214,52 @@
   function chatUrl() {
     if (baseUrl === null) return null;
     return baseUrl === SAME_ORIGIN_BASE ? "/api/chat" : baseUrl + "/chat";
+  }
+
+  function apiPath(p) {
+    return (baseUrl === SAME_ORIGIN_BASE ? "/api" : baseUrl) + p;
+  }
+
+  /**
+   * 预热本地模型：请求代理自动拉起 local_model.py，
+   * 然后轮询 /health 直到模型加载完成。
+   */
+  async function warmLocal() {
+    if (warming) return localLoaded;
+    warming = true;
+    syncProviderUI();
+    setStatus("正在启动本地模型…", "idle");
+
+    try {
+      await fetch(apiPath("/local/warm"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      });
+    } catch (_) {
+      /* 代理没起时会走下面的轮询失败分支 */
+    }
+
+    for (let i = 0; i < 45; i++) {
+      await sleep(1600);
+      const ok = await probe();
+      if (ok && localLoaded) {
+        warming = false;
+        syncProviderUI();
+        setStatus("本地模型 · " + localModelName, "ok");
+        addMessage("ai", "本地模型已就绪，可以开始提问了。");
+        return true;
+      }
+    }
+
+    warming = false;
+    syncProviderUI();
+    setStatus("本地模型启动超时", "off");
+    addMessage(
+      "ai",
+      "本地模型启动超时。\n可以在本机手动运行：python server/local_model.py（端口 8100），首次加载约 10~40 秒。"
+    );
+    return false;
   }
 
   async function ask(text) {
@@ -276,6 +334,8 @@
     root.classList.add("is-open");
     root.setAttribute("aria-hidden", "false");
     toggle.setAttribute("aria-expanded", "true");
+    // 收起悬浮球，避免遮挡输入框
+    document.body.classList.add("ai-chat-open");
     welcome();
     if (baseUrl === null) probe();
     input.focus();
@@ -285,6 +345,7 @@
     root.classList.remove("is-open");
     root.setAttribute("aria-hidden", "true");
     toggle.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("ai-chat-open");
   }
 
   function setOpen(next) {
@@ -310,20 +371,24 @@
   // 云端 / 本地 切换
   switchBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
-      if (btn.disabled || busy) return;
+      if (btn.disabled || busy || warming) return;
       const next = btn.dataset.provider;
       if (next === provider) return;
       provider = next;
       saveProvider(provider);
       syncProviderUI();
-      // 切换后重新探测，让状态栏显示对应模型
-      probe();
-      addMessage(
-        "ai",
-        provider === "local"
-          ? "已切换到【本地模型】（本机 Qwen2.5 + LoRA）。回答由你电脑上的模型生成。"
-          : "已切换到【云端模型】（阿里云百炼 deepseek-v4.1-flash）。"
-      );
+
+      if (provider === "local") {
+        addMessage("ai", "已切换到【本地模型】。正在检查/启动本机模型…");
+        if (!localLoaded) {
+          warmLocal();
+        } else {
+          setStatus("本地模型 · " + localModelName, "ok");
+        }
+      } else {
+        probe();
+        addMessage("ai", "已切换到【云端模型】（阿里云百炼 deepseek-v4.1-flash）。");
+      }
     });
   });
 
