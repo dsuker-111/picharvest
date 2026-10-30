@@ -392,6 +392,60 @@ button:focus-visible, select:focus-visible, label:focus-within {
   background: rgba(250, 246, 238, .94);
   box-shadow: 0 -8px 20px rgba(69, 52, 28, .035);
 }
+
+/* 水印设置条 */
+.wmbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 42px;
+  padding: 5px 13px;
+  border-top: 1px solid var(--line);
+  background: rgba(250, 246, 238, .6);
+}
+.wm-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.wm-check input { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; cursor: pointer; }
+.wm-check svg { color: var(--accent); flex: 0 0 auto; }
+.wm-text {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 11.5px;
+  outline: none;
+  transition: border-color .15s;
+}
+.wm-text:focus { border-color: var(--accent); }
+.wm-text:disabled { opacity: .5; }
+.wm-opacity { display: grid; place-items: center; }
+.wm-opacity input { width: 52px; accent-color: var(--accent); }
+.wm-preview {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+}
+.wm-preview:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.wm-preview:disabled { opacity: .5; cursor: default; }
 .selection-count {
   display: flex;
   align-items: baseline;

@@ -725,9 +725,24 @@ h1, h2, h3, p { margin-top: 0; }
 .dedupe-count span:last-child { margin-top: 12px; }
 
 .card-zip, .card-local, .card-sites { display: flex; grid-column: span 4; flex-direction: column; min-height: 345px; }
-.card-zip { background: var(--accent-soft); border-color: #edc3b2; }
-.card-local { background: #e7e9d4; border-color: #d2d5b8; }
-.card-sites { background: var(--card); }
+.card-watermark { display: flex; grid-column: span 4; flex-direction: column; min-height: 345px; background: #f1ead8; border-color: #ddd2b6; }
+.card-zip, .card-local, .card-sites, .card-watermark { grid-column: span 4; }
+.card-watermark h3 { font-size: 23px; }
+.card-watermark p { font-size: 12px; }
+.wm-visual { position: relative; display: flex; align-items: center; justify-content: center; margin: 20px 0 22px; color: var(--ink); }
+.wm-visual svg { opacity: .95; }
+.wm-visual .wm-label {
+  position: absolute;
+  right: 18px;
+  bottom: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, .72);
+  color: #fff;
+  font-size: 8px;
+  letter-spacing: .08em;
+}
+.card-watermark .card-index { color: #a58d5b; }
 .card-zip h3, .card-local h3, .card-sites h3 { font-size: 23px; }
 .card-zip p, .card-local p, .card-sites p { font-size: 12px; }
 .zip-visual { display: flex; align-items: flex-start; gap: 13px; margin: 21px 0 24px; }

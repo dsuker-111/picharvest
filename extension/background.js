@@ -108,7 +108,8 @@ async function downloadZip(payload) {
     target: "offscreen",
     type: "BUILD_ZIP",
     images,
-    title: payload.title || "商品图片"
+    title: payload.title || "商品图片",
+    watermark: payload.watermark
   });
 
   if (!result || !result.ok || !result.blobUrl) {
@@ -136,6 +137,7 @@ async function downloadZip(payload) {
 async function downloadIndividual(payload) {
   const images = validImages(payload.images, MAX_INDIVIDUAL_IMAGES);
   if (!images.length) return { ok: false, error: "请先选择要下载的图片" };
+  const wm = (payload.watermark && payload.watermark.enabled) ? payload.watermark : null;
   const folder = `PicHarvest/${safeFilename(payload.title || "商品图片")}_${extensionDate()}`;
   const usedNames = new Set();
   const failures = [];
@@ -153,8 +155,23 @@ async function downloadIndividual(payload) {
     }
     usedNames.add(name);
     try {
+      let url = image.url;
+      if (wm) {
+        await ensureOffscreen();
+        const res = await chrome.runtime.sendMessage({
+          target: "offscreen",
+          type: "WATERMARK_ONE",
+          image,
+          watermark: wm
+        });
+        if (!res || !res.ok || !res.blobUrl) {
+          throw new Error((res && res.error) || "水印处理失败");
+        }
+        url = res.blobUrl;
+        name = `${folder}/${String(i + 1).padStart(3, "0")}_${base}.png`;
+      }
       await chrome.downloads.download({
-        url: image.url,
+        url,
         filename: name,
         saveAs: false,
         conflictAction: "uniquify"
@@ -192,6 +209,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     downloadIndividual(message).then(sendResponse).catch((error) => {
       sendResponse({ ok: false, error: String(error && error.message || error) });
     });
+    return true;
+  }
+  if (message.type === "WATERMARK_PREVIEW") {
+    (async () => {
+      try {
+        await ensureOffscreen();
+        const res = await chrome.runtime.sendMessage({
+          target: "offscreen",
+          type: "WATERMARK_ONE",
+          image: message.image,
+          watermark: message.watermark
+        });
+        sendResponse(res && res.ok ? { ok: true, blobUrl: res.blobUrl } : { ok: false, error: (res && res.error) || "水印处理失败" });
+      } catch (error) {
+        sendResponse({ ok: false, error: String(error && error.message || error) });
+      }
+    })();
     return true;
   }
   if (message.type === "SHOW_DOWNLOAD") {

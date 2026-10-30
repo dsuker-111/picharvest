@@ -8,10 +8,10 @@
 - **GitHub 仓库**：https://github.com/dsuker-111/picharvest
 - **v1.0.0 Release**：https://github.com/dsuker-111/picharvest/releases/tag/v1.0.0
 - **GitHub 安装包直链**：https://github.com/dsuker-111/picharvest/releases/latest/download/picharvest-extension-v1.0.0.zip
-- **版本**：v1.0.0（Chrome / Edge 116+）
-- **安装包**：`site/downloads/picharvest-extension-v1.0.0.zip`
+- **版本**：v1.1.0（Chrome / Edge 116+），新增图片水印
+- **安装包**：`site/downloads/picharvest-extension-v1.1.0.zip`
 - **源码包**：`site/downloads/picharvest-source-v1.0.0.zip`
-- **SHA-256**：`e29a4b79f7f659126b468086a5ef37b0877642cf45e9f25856b869d91c3597ba`
+- **SHA-256**：`86d721de61643115286fe568e1d26c80ae08deec521c54d4507f29d7731ea5bb`
 - **源码校验**：`site/downloads/SOURCE-SHA256.txt`
 - **许可**：MIT
 
@@ -68,6 +68,7 @@
   - ZIP：在隐藏的 offscreen 页面中用 JSZip 生成，不转码、不压缩画质。
   - 逐张：交给浏览器下载器，适合带登录态 / 防盗链的 CDN。
 - **按商品命名**：ZIP 内按商品标题建文件夹，图片按 `001_描述.jpg` 命名。
+- **图片水印（v1.1.0）**：逐一给下载的图片叠加可自定义文字水印。支持开关、水印文字与不透明度调节，可下载单张预览；水印在打包/下载前本机叠加，ZIP 与逐张下载都生效。
 - **本地处理**：没有账号、没有后端、没有统计 SDK。图片从原站直接下载到浏览器。
 - **真实 UI**：站点筛选、主图标记、尺寸提示、勾选、全选、最低尺寸过滤、进度与失败跳过提示。
 
@@ -77,7 +78,7 @@ Amazon、Shopify（含自定义域名）、淘宝、天猫、1688、AliExpress�
 
 ## 安装（本地包）
 
-1. 下载 `picharvest-extension-v1.0.0.zip` 并解压到一个固定文件夹。
+1. 下载 `picharvest-extension-v1.1.0.zip` 并解压到一个固定文件夹。
 2. Chrome 打开 `chrome://extensions`；Edge 打开 `edge://extensions`。
 3. 开启右上角「开发者模式」。
 4. 点击「加载已解压的扩展程序」，选择解压后的文件夹。

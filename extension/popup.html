@@ -73,6 +73,21 @@
       </div>
     </main>
 
+    <footer class="wmbar" id="wmbar" hidden>
+      <label class="wm-check">
+        <input type="checkbox" id="watermarkChk">
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M2.5 14c1-2.5 2.5-3.6 4-3.6s3 1.6 4.5 1.6 3-.8 4-2.5M2.5 17c2.2-1 3.5-2 5-2s2.5 1 3.8 1" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="15" cy="4.5" r="1.8" fill="currentColor"/><path d="M2.5 6C4 4.8 5 4.5 6 4.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span>水印</span>
+      </label>
+      <input class="wm-text" id="watermarkText" type="text" maxlength="40" placeholder="水印文字，如 @PicHarvest" aria-label="水印文字">
+      <label class="wm-opacity" title="水印不透明度">
+        <input type="range" id="watermarkOpacity" min="8" max="90" value="45" aria-label="水印不透明度">
+      </label>
+      <button class="wm-preview" id="watermarkPreview" type="button" title="预览" aria-label="预览水印">
+        <svg viewBox="0 0 20 20" width="15" height="15" aria-hidden="true"><path d="M2 7.5 7.5 2H18v16H2V7.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M2 7.5H7.5V2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+    </footer>
+
     <footer class="actionbar">
       <div class="selection-count">
         <strong id="selectedCount">0</strong>

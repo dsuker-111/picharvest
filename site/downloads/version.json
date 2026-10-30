@@ -1,8 +1,8 @@
 {
   "name": "PicHarvest 图仓 · 电商图片下载器",
-  "version": "1.0.0",
-  "file": "picharvest-extension-v1.0.0.zip",
-  "bytes": 74144,
-  "sha256": "e29a4b79f7f659126b468086a5ef37b0877642cf45e9f25856b869d91c3597ba",
-  "builtAt": "2026-10-27T04:49:21.541Z"
+  "version": "1.1.0",
+  "file": "picharvest-extension-v1.1.0.zip",
+  "bytes": 77046,
+  "sha256": "86d721de61643115286fe568e1d26c80ae08deec521c54d4507f29d7731ea5bb",
+  "builtAt": "2026-10-30T00:46:09.000Z"
 }

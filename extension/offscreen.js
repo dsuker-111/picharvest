@@ -61,6 +61,55 @@ async function progress(message) {
   } catch (_) {}
 }
 
+/**
+ * 给图片叠加文字水印，并重新编码。
+ * @param {Blob} blob    原始图片（png/jpeg/webp/avif，gif 会保留原样无法加水印）
+ * @param {object} wm    水印配置 { text, opacity }
+ * @returns {Promise<{blob:Blob, ext:string, watermarked:boolean}>}
+ */
+async function applyWatermark(blob, wm) {
+  const text = String((wm && wm.text) || "").trim() || "PicHarvest 图仓";
+  const opacity = Math.min(1, Math.max(0.08, Number(wm && wm.opacity) || 0.4));
+  const bmp = await createImageBitmap(blob);
+  try {
+    const width = bmp.width;
+    const height = bmp.height;
+    const canvas = new OffscreenCanvas(width, height);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return { blob, ext: extensionFor(blob, ""), watermarked: false };
+
+    ctx.drawImage(bmp, 0, 0, width, height);
+
+    // 字号随图片宽度自适应（4.5%），加一个半透明底条保证可读
+    const fontSize = Math.max(14, Math.round(width * 0.045));
+    ctx.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif`;
+    ctx.textBaseline = "bottom";
+    ctx.globalAlpha = opacity;
+
+    const metrics = ctx.measureText(text);
+    const pad = Math.max(10, Math.round(fontSize * 0.55));
+    const textW = metrics.width;
+    const textH = fontSize * 1.15;
+    const x = width - textW - pad * 2;
+    const y = height - pad * 2 - textH;
+
+    // 半透明深色底条，增强全文/亮图下的可读性
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(x, y, textW + pad * 2, textH + pad);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(text, x + pad, y + textH - pad + fontSize * 0.15);
+
+    ctx.globalAlpha = 1;
+
+    // 输出格式：gif 保持原样（动画无法叠加）；其余统一 PNG（带透明度/文本最稳）
+    const outType = "image/png";
+    const outBlob = await canvas.convertToBlob({ type: outType, quality: 0.92 });
+    return { blob: outBlob, ext: "png", watermarked: true };
+  } finally {
+    bmp.close();
+  }
+}
+
 async function fetchOne(image) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 30000);
@@ -87,9 +136,11 @@ async function buildZip(payload) {
   if (building) return { ok: false, error: "已有打包任务正在进行，请稍候" };
   building = true;
   const started = Date.now();
+  const wm = (payload.watermark && payload.watermark.enabled) ? payload.watermark : null;
   try {
     const images = Array.isArray(payload.images) ? payload.images.slice(0, 80) : [];
     if (!images.length) return { ok: false, error: "没有可下载的图片" };
+    if (wm) await progress({ phase: "watermark", done: 0, total: images.length });
     const title = safeName(payload.title || "商品图片", "商品图片");
     const zip = new JSZip();
     const folderName = safeName(title, "images");
@@ -109,11 +160,15 @@ async function buildZip(payload) {
         const image = images[index];
         try {
           if (bytes > MAX_TOTAL_BYTES) throw new Error("压缩包已超过 280 MB 上限");
-          const blob = await fetchOne(image);
+          let blob = await fetchOne(image);
+          if (wm) {
+            const result = await applyWatermark(blob, wm);
+            blob = result.blob;
+          }
           if (bytes + blob.size > MAX_TOTAL_BYTES) throw new Error("达到 280 MB 压缩包上限");
           bytes += blob.size;
           success++;
-          const ext = extensionFor(blob, image.url);
+          const ext = wm ? "png" : extensionFor(blob, image.url);
           const base = safeName(image.alt || `image-${String(index + 1).padStart(3, "0")}`, `image-${index + 1}`);
           let name = `${String(index + 1).padStart(3, "0")}_${base}.${ext}`;
           let suffix = 2;
@@ -130,6 +185,7 @@ async function buildZip(payload) {
           });
         }
         finished++;
+        if (wm) await progress({ phase: "watermark", done: finished, total: images.length, success });
         await progress({ phase: "fetch", done: finished, total: images.length, success });
       }
     }
@@ -165,6 +221,29 @@ async function buildZip(payload) {
   }
 }
 
+async function watermarkOne(image, wm) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  try {
+    const response = await fetch(image.url, {
+      credentials: "omit",
+      cache: "force-cache",
+      referrerPolicy: "no-referrer",
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    let blob = await response.blob();
+    if (!(await looksLikeImage(blob))) throw new Error("返回内容不是图片");
+    const result = await applyWatermark(blob, wm);
+    const outUrl = URL.createObjectURL(result.blob);
+    setTimeout(() => URL.revokeObjectURL(outUrl), 10 * 60 * 1000);
+    const base = safeName(image.alt || "image", "image");
+    return { ok: true, blobUrl: outUrl, filename: `${base}.png` };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || message.target !== "offscreen") return;
   if (message.type === "PING") {
@@ -173,6 +252,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   if (message.type === "BUILD_ZIP") {
     buildZip(message).then(sendResponse).catch((error) => {
+      sendResponse({ ok: false, error: String(error && error.message || error) });
+    });
+    return true;
+  }
+  if (message.type === "WATERMARK_ONE") {
+    watermarkOne(message.image, message.watermark).then(sendResponse).catch((error) => {
       sendResponse({ ok: false, error: String(error && error.message || error) });
     });
     return true;

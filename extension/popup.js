@@ -17,7 +17,8 @@ const state = {
   scanning: false,
   downloadId: null,
   toastTimer: 0,
-  completed: false
+  completed: false,
+  watermark: { enabled: false, text: "@PicHarvest 图仓", opacity: 0.45 }
 };
 
 const els = {
@@ -52,7 +53,12 @@ const els = {
   progressActions: $("progressActions"),
   showDownloadBtn: $("showDownloadBtn"),
   closeOverlayBtn: $("closeOverlayBtn"),
-  toast: $("toast")
+  toast: $("toast"),
+  wmbar: $("wmbar"),
+  watermarkChk: $("watermarkChk"),
+  watermarkText: $("watermarkText"),
+  watermarkOpacity: $("watermarkOpacity"),
+  watermarkPreview: $("watermarkPreview")
 };
 
 function setStateView(view, title, text) {
@@ -296,11 +302,91 @@ function setActionState() {
   els.zipBtn.disabled = disabled;
   els.singleBtn.disabled = disabled;
   els.zipLabel.textContent = count > 1 ? `打包下载 · ${Math.min(count, MAX_ZIP)}` : "打包下载";
+  // 有图片时显示水印条
+  els.wmbar.hidden = state.visible.length === 0;
+  syncWmState();
   updateSelectAllLabel();
 }
 
 function selectedImages() {
   return state.visible.filter((image) => state.selected.has(image.url));
+}
+
+/* ---- 水印 ---- */
+const WM_STORAGE_KEY = "picharvestWatermark";
+
+function wmInputs() {
+  return {
+    enabled: els.watermarkChk.checked,
+    text: (els.watermarkText.value || "").trim(),
+    opacity: (Number(els.watermarkOpacity.value) || 45) / 100
+  };
+}
+
+function getWatermark() {
+  const w = wmInputs();
+  if (!w.enabled) return { enabled: false };
+  return { enabled: true, text: w.text || "@PicHarvest 图仓", opacity: w.opacity };
+}
+
+async function loadWatermark() {
+  try {
+    const data = await chrome.storage.local.get(WM_STORAGE_KEY);
+    const saved = data[WM_STORAGE_KEY];
+    if (saved && typeof saved === "object") {
+      els.watermarkChk.checked = !!saved.enabled;
+      if (saved.text) els.watermarkText.value = saved.text;
+      els.watermarkOpacity.value = String(Math.round((Number(saved.opacity) || 0.45) * 100));
+    }
+  } catch (_) { /* ok */ }
+  syncWmState();
+}
+
+function syncWmState() {
+  const enabled = els.watermarkChk.checked;
+  els.watermarkText.disabled = !enabled;
+  els.watermarkOpacity.disabled = !enabled;
+  els.watermarkPreview.disabled = !enabled || !els.watermarkText.value.trim();
+}
+
+function persistWatermark() {
+  const value = {
+    enabled: els.watermarkChk.checked,
+    text: els.watermarkText.value.trim(),
+    opacity: (Number(els.watermarkOpacity.value) || 45) / 100
+  };
+  try {
+    chrome.storage.local.set({ [WM_STORAGE_KEY]: value });
+  } catch (_) { /* ok */ }
+}
+
+async function previewWatermark() {
+  if (state.busy) return;
+  const first = selectedImages()[0];
+  if (!first) { toast("请先勾选图片再预览水印"); return; }
+  state.busy = true;
+  setActionState();
+  showProgress("正在生成水印预览", "对第一张图应用水印…", 8);
+  try {
+    const bkgRes = await runtimeMessage({
+      type: "WATERMARK_PREVIEW",
+      image: { url: first.url, alt: first.alt },
+      watermark: getWatermark()
+    }, 60000);
+    if (!bkgRes || !bkgRes.ok) throw new Error((bkgRes && bkgRes.error) || "预览失败");
+    await chrome.downloads.download({
+      url: bkgRes.blobUrl,
+      filename: "PicHarvest_水印预览.png",
+      saveAs: false,
+      conflictAction: "uniquify"
+    });
+    showSuccess("水印预览已下载", "请在浏览器下载记录里查看这张带水印的图。", null);
+  } catch (error) {
+    showOverlayError("预览失败", friendlyError(error));
+  } finally {
+    state.busy = false;
+    setActionState();
+  }
 }
 
 function toast(message, isError) {
@@ -381,7 +467,8 @@ async function startZip() {
     const response = await runtimeMessage({
       type: "DOWNLOAD_ZIP",
       images: images.map(({ url, alt }) => ({ url, alt })),
-      title: (state.result && state.result.page && state.result.page.title) || "商品图片"
+      title: (state.result && state.result.page && state.result.page.title) || "商品图片",
+      watermark: getWatermark()
     }, 180000);
     if (!response || !response.ok) throw new Error((response && response.error) || "ZIP 生成失败");
     const skipped = response.failures && response.failures.length ? `，跳过 ${response.failures.length} 张无法访问的图片` : "";
@@ -410,7 +497,8 @@ async function startIndividual() {
     const response = await runtimeMessage({
       type: "DOWNLOAD_INDIVIDUAL",
       images: images.map(({ url, alt }) => ({ url, alt })),
-      title: (state.result && state.result.page && state.result.page.title) || "商品图片"
+      title: (state.result && state.result.page && state.result.page.title) || "商品图片",
+      watermark: getWatermark()
     }, 90000);
     if (!response || !response.ok) throw new Error((response && response.error) || "创建下载失败");
     const skipped = response.failures && response.failures.length ? `，${response.failures.length} 张未能创建` : "";
@@ -452,6 +540,11 @@ function bindEvents() {
     applyFilter(true);
   });
 
+  els.watermarkChk.addEventListener("change", () => { syncWmState(); persistWatermark(); });
+  els.watermarkText.addEventListener("input", () => { syncWmState(); persistWatermark(); });
+  els.watermarkOpacity.addEventListener("input", () => persistWatermark());
+  els.watermarkPreview.addEventListener("click", previewWatermark);
+
   els.rescanBtn.addEventListener("click", scan);
   els.zipBtn.addEventListener("click", startZip);
   els.singleBtn.addEventListener("click", startIndividual);
@@ -489,6 +582,12 @@ function bindEvents() {
         setRing(90 + (Number(message.percent) || 0) * 0.1);
         els.progressTitle.textContent = "正在压缩";
         els.progressText.textContent = `把 ${message.success || ""} 张图片装进 ZIP…`;
+      } else if (message.phase === "watermark") {
+        const done = Number(message.done) || 0;
+        const total = Number(message.total) || 1;
+        setRing((done / total) * 90);
+        els.progressTitle.textContent = "正在添加水印";
+        els.progressText.textContent = `处理中 ${done} / ${total} 张…`;
       } else if (message.phase === "download") {
         const done = Number(message.done) || 0;
         const total = Number(message.total) || 1;
@@ -512,6 +611,7 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  await loadWatermark();
   const params = new URLSearchParams(location.search);
   const forcedTabId = Number(params.get("tabId")) || 0;
   try {
